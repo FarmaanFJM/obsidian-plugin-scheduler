@@ -2,6 +2,15 @@ export interface SchedulerSettings {
     categories: CategoryConfig[];
     weeklySchedule: WeeklySchedule;
     monthlyTasks: MonthlyTasks;
+    standardItems: StandardItemConfig[];
+    sleepSchedule: SleepSchedule;
+    showNotifications: boolean;
+}
+
+export interface SleepSchedule {
+    enabled: boolean;
+    sleepTime: number; // Hour (0-23)
+    wakeTime: number; // Hour (0-23)
 }
 
 export interface CategoryConfig {
@@ -15,6 +24,15 @@ export interface SchedulerItem {
     name: string;
     description: string;
     categoryId: string;
+    isStandard?: boolean; // Flag for standard/recurring items
+}
+
+export interface StandardItemConfig {
+    name: string;
+    description: string;
+    categoryId: string;
+    days: number[]; // 0-6 (Monday-Sunday), empty array = all days
+    hours: number[]; // Hours to appear (0-23)
 }
 
 // Weekly Schedule Structure

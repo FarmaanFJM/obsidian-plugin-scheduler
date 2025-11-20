@@ -1,4 +1,4 @@
-import { Plugin, WorkspaceLeaf } from 'obsidian';
+import { Notice, Plugin, WorkspaceLeaf } from 'obsidian';
 import { SchedulerSettings, SchedulerItem, CategoryConfig, WeeklySchedule, MonthlyTasks } from './types';
 import { SchedulerSettingTab } from './settings';
 import { SchedulerView, VIEW_TYPE_SCHEDULER } from './view';
@@ -13,11 +13,28 @@ const DEFAULT_SETTINGS: SchedulerSettings = {
         { id: 'other', name: 'Other', color: '#95A5A6' }
     ],
     weeklySchedule: {},
-    monthlyTasks: {}
+    monthlyTasks: {},
+    standardItems: [
+        {
+            name: 'Gym',
+            description: 'Morning workout',
+            categoryId: 'health',
+            days: [0, 2, 4], // Mon, Wed, Fri
+            hours: [6]
+        }
+    ],
+    sleepSchedule: {
+        enabled: true,
+        sleepTime: 22,
+        wakeTime: 4
+    },
+    showNotifications: true
 };
 
 export default class SchedulerPlugin extends Plugin {
     settings: SchedulerSettings;
+    private lastNotifiedHour: number = -1;
+    private notificationInterval: number | null = null;
 
     async onload() {
         await this.loadSettings();
@@ -42,6 +59,29 @@ export default class SchedulerPlugin extends Plugin {
             }
         });
 
+        this.addCommand({
+            id: 'populate-standard-tasks',
+            name: 'Populate Standard Tasks',
+            callback: () => this.populateStandardTasks()
+        });
+
+        this.addCommand({
+            id: 'clear-non-standard-tasks',
+            name: 'Clear All Non-Standard Tasks',
+            callback: () => this.clearNonStandardTasks()
+        });
+
+        this.addCommand({
+            id: 'clear-all-tasks',
+            name: 'Clear ALL Tasks (Including Standard)',
+            callback: () => {
+                const confirmed = confirm('Clear ALL tasks including standard/recurring tasks? This cannot be undone!');
+                if (confirmed) {
+                    this.clearAllTasks();
+                }
+            }
+        });
+
         // Add command to clear all data
         this.addCommand({
             id: 'clear-scheduler',
@@ -59,6 +99,16 @@ export default class SchedulerPlugin extends Plugin {
 
         // Initialize empty schedule if needed
         this.initializeSchedule();
+
+        // Auto-populate standard tasks on first load
+        if (Object.keys(this.settings.weeklySchedule).length === 0) {
+            this.populateStandardTasks();
+        }
+
+        // Start notification checker
+        if (this.settings.showNotifications) {
+            this.startNotificationChecker();
+        }
     }
 
     async activateView() {
@@ -166,14 +216,14 @@ export default class SchedulerPlugin extends Plugin {
         // Remove from weekly schedule
         for (const day in this.settings.weeklySchedule) {
             for (const hour in this.settings.weeklySchedule[day]) {
-                this.settings.weeklySchedule[day][hour] = 
+                this.settings.weeklySchedule[day][hour] =
                     this.settings.weeklySchedule[day][hour].filter(item => item.id !== itemId);
             }
         }
 
         // Remove from monthly tasks
         for (const month in this.settings.monthlyTasks) {
-            this.settings.monthlyTasks[month] = 
+            this.settings.monthlyTasks[month] =
                 this.settings.monthlyTasks[month].filter(item => item.id !== itemId);
         }
 
@@ -189,9 +239,166 @@ export default class SchedulerPlugin extends Plugin {
         });
     }
 
+    populateStandardTasks() {
+        let addedCount = 0;
+
+        // Add sleep schedule
+        if (this.settings.sleepSchedule.enabled) {
+            const sleepItem: Omit<SchedulerItem, 'id'> = {
+                name: 'Sleep',
+                description: '',
+                categoryId: 'other',
+                isStandard: true
+            };
+
+            const wakeItem: Omit<SchedulerItem, 'id'> = {
+                name: 'Wake Up',
+                description: '',
+                categoryId: 'other',
+                isStandard: true
+            };
+
+            // Add to all days
+            for (let day = 0; day < 7; day++) {
+                // Check if Sleep already exists
+                const sleepExists = this.settings.weeklySchedule[day][this.settings.sleepSchedule.sleepTime]
+                    .some(i => i.name === 'Sleep' && i.isStandard);
+                if (!sleepExists) {
+                    this.addItemToSchedule(day, this.settings.sleepSchedule.sleepTime, sleepItem);
+                    addedCount++;
+                }
+
+                // Check if Wake Up already exists
+                const wakeExists = this.settings.weeklySchedule[day][this.settings.sleepSchedule.wakeTime]
+                    .some(i => i.name === 'Wake Up' && i.isStandard);
+                if (!wakeExists) {
+                    this.addItemToSchedule(day, this.settings.sleepSchedule.wakeTime, wakeItem);
+                    addedCount++;
+                }
+            }
+        }
+
+        // Add other standard items
+        for (const standard of this.settings.standardItems) {
+            const item: Omit<SchedulerItem, 'id'> = {
+                name: standard.name,
+                description: standard.description,
+                categoryId: standard.categoryId,
+                isStandard: true
+            };
+
+            const days = standard.days.length > 0 ? standard.days : [0, 1, 2, 3, 4, 5, 6];
+
+            for (const day of days) {
+                for (const hour of standard.hours) {
+                    const existing = this.settings.weeklySchedule[day][hour];
+                    const alreadyExists = existing.some(i => i.name === standard.name && i.isStandard);
+
+                    if (!alreadyExists) {
+                        this.addItemToSchedule(day, hour, item);
+                        addedCount++;
+                    }
+                }
+            }
+        }
+
+        this.saveSettings();
+        this.refreshView();
+
+        if (addedCount === 0) {
+            new Notice('All standard tasks already populated!');
+        } else {
+            new Notice(`Added ${addedCount} standard tasks!`);
+        }
+    }
+
+    clearNonStandardTasks() {
+        let cleared = 0;
+
+        for (const day in this.settings.weeklySchedule) {
+            for (const hour in this.settings.weeklySchedule[day]) {
+                const original = this.settings.weeklySchedule[day][hour].length;
+                this.settings.weeklySchedule[day][hour] =
+                    this.settings.weeklySchedule[day][hour].filter(item => item.isStandard);
+                cleared += original - this.settings.weeklySchedule[day][hour].length;
+            }
+        }
+
+        this.saveSettings();
+        this.refreshView();
+        new Notice(`Cleared ${cleared} non-standard tasks!`);
+    }
+
+    clearMonthTasks(month: number) {
+        this.settings.monthlyTasks[month] = [];
+        this.saveSettings();
+        this.refreshView();
+        new Notice('Month tasks cleared!');
+    }
+
+    startNotificationChecker() {
+        this.notificationInterval = window.setInterval(() => {
+            this.checkHourlyNotification();
+        }, 60000); // Check every minute
+
+        this.registerInterval(this.notificationInterval);
+    }
+
+    checkHourlyNotification() {
+        if (!this.settings.showNotifications) return;
+
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentDay = (now.getDay() + 6) % 7; // Convert to Mon=0
+
+        // Only notify at top of hour
+        if (now.getMinutes() === 0 && this.lastNotifiedHour !== currentHour) {
+            this.lastNotifiedHour = currentHour;
+            this.showHourNotification(currentDay, currentHour);
+        }
+    }
+
+    showHourNotification(day: number, hour: number) {
+        const items = this.getItemsForCell(day, hour);
+
+        if (items.length === 0) return;
+
+        const hourStr = hour.toString().padStart(2, '0') + ':00';
+        let message = `📅 Tasks for ${hourStr}:\n\n`;
+
+        items.forEach(item => {
+            message += `• ${item.name}`;
+            if (item.description) {
+                message += `\n  ${item.description}`;
+            }
+            message += '\n';
+        });
+
+        new Notice(message, 10000);
+    }
+
+    clearAllTasks() {
+        let cleared = 0;
+
+        // Clear weekly schedule
+        for (const day in this.settings.weeklySchedule) {
+            for (const hour in this.settings.weeklySchedule[day]) {
+                cleared += this.settings.weeklySchedule[day][hour].length;
+                this.settings.weeklySchedule[day][hour] = [];
+            }
+        }
+
+        this.saveSettings();
+        this.refreshView();
+        new Notice(`Cleared all ${cleared} tasks!`);
+    }
+
     async onunload() {
-        // Detach all scheduler views
         this.app.workspace.detachLeavesOfType(VIEW_TYPE_SCHEDULER);
+
+        if (this.notificationInterval !== null) {
+            window.clearInterval(this.notificationInterval);
+        }
     }
 
     async loadSettings() {
