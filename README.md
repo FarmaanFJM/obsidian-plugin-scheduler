@@ -1,94 +1,172 @@
-# Obsidian Sample Plugin
+# Scheduler Plugin for Obsidian
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+An interactive weekly scheduler plugin that lets you create color-coded weekly planners with clickable cells.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Features
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+✅ **Interactive Weekly Scheduler**
+- Click any cell to add items
+- Color-coded categories (School, Projects, Health, etc.)
+- Multiple items per cell
+- Custom colors supported
 
-## First time developing plugins?
+✅ **Standard Items**
+- Pre-configure recurring items (Sleep, Gym, Meals)
+- Auto-insert standard items into your schedule
 
-Quick starting guide for new plugin devs:
+✅ **Monthly Task Lists**
+- Generate monthly task templates
+- Track tasks across the year
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+✅ **Customizable Categories**
+- Add, edit, or remove categories
+- Set custom colors for each category
 
-## Releasing new releases
+## Installation
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+1. Copy all the plugin files to your Obsidian vault:
+   ```
+   VaultFolder/.obsidian/plugins/scheduler-plugin/
+   ```
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+2. The plugin folder should contain:
+   - `main.ts`
+   - `manifest.json`
+   - `types.ts`
+   - `tableUtils.ts`
+   - `modal.ts`
+   - `settings.ts`
 
-## Adding your plugin to the community plugin list
+3. Compile the TypeScript files:
+   ```bash
+   cd VaultFolder/.obsidian/plugins/scheduler-plugin/
+   npm install
+   npm run build
+   ```
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+4. Enable the plugin in Obsidian:
+   - Go to Settings → Community Plugins
+   - Turn off "Restricted Mode" if needed
+   - Click "Reload Plugins"
+   - Enable "Scheduler"
 
-## How to use
+## Usage
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+### Creating a Weekly Scheduler
 
-## Manually installing the plugin
+1. Open any note
+2. Open Command Palette (Ctrl/Cmd + P)
+3. Run: **"Insert Weekly Scheduler Table"**
+4. A weekly table will be inserted (04:00 - 23:00, Monday - Sunday)
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+### Adding Items to Your Schedule
 
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint ./src/`
+1. **Click any cell** in the scheduler table
+2. A modal will appear with:
+   - **Name** (required): e.g., "Gym", "Study", "Meeting"
+   - **Description** (optional): Additional details
+   - **Category**: Choose from predefined categories
+   - **Custom Color**: Override category color if needed
+3. Click **"Add Item"**
+4. The item appears in the cell with color formatting
 
-## Funding URL
+### Adding Multiple Items
 
-You can include funding URLs where people who use your plugin can financially support it.
+- Click the same cell multiple times to add more items
+- Each item appears as a separate bullet point
+- Items stack vertically in the cell
 
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
+### Using Standard Items
 
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+1. Open Command Palette
+2. Run: **"Insert Standard Items Into Week"**
+3. Predefined items (Sleep, Gym, Meals) are added to your schedule
+4. Standard items won't duplicate if already present
+
+### Configuring Categories
+
+1. Go to Settings → Scheduler
+2. Under "Categories":
+   - **Edit name**: Change category names
+   - **Change color**: Click the color picker
+   - **Delete**: Remove unwanted categories
+   - **Add New Category**: Create custom categories
+
+### Resetting Your Schedule
+
+1. Open Command Palette
+2. Run: **"Reset Weekly Scheduler"**
+3. All items are cleared, but the table structure remains
+
+### Creating Monthly Task Lists
+
+1. Open Command Palette
+2. Run: **"Insert Monthly Tasklist"**
+3. A template with all 12 months is inserted
+4. Add tasks under each month
+
+## Example Workflow
+
+```markdown
+# My 2025 Schedule
+
+<!-- scheduler-start -->
+
+| Time  | Monday | Tuesday | Wednesday | Thursday | Friday | Saturday | Sunday |
+| ----- | ------ | ------- | --------- | -------- | ------ | -------- | ------ |
+| 06:00 | - <span style="color:#FFA500; font-weight:bold;">Gym</span>  <br>  Cardio workout | | - <span style="color:#FFA500; font-weight:bold;">Gym</span>  <br>  Strength training | | - <span style="color:#FFA500; font-weight:bold;">Gym</span>  <br>  Full body | | |
+| 09:00 | - <span style="color:#8B4513; font-weight:bold;">School</span>  <br>  Math class | - <span style="color:#8B4513; font-weight:bold;">School</span>  <br>  Programming | - <span style="color:#8B4513; font-weight:bold;">School</span>  <br>  Database Design | | | | |
+
+<!-- scheduler-end -->
 ```
 
-If you have multiple URLs, you can also do:
+## Default Categories
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
+- **School** - Brown (#8B4513)
+- **Projects** - Purple (#563E78)
+- **Health** - Orange (#FFA500)
+- **Other** - Blue (#00A0C8)
 
-## API Documentation
+## Tips
 
-See https://github.com/obsidianmd/obsidian-api
+1. **Color Coding**: Use consistent colors for similar activities
+2. **Descriptions**: Add details like locations, specific exercises, or meeting topics
+3. **Multi-Year**: Create separate files like `Schedule-2025.md`, `Schedule-2026.md`
+4. **Backup**: The plugin works with Markdown, so your data is always readable
+
+## Commands Summary
+
+| Command | Description |
+|---------|-------------|
+| Insert Weekly Scheduler Table | Creates a new empty scheduler |
+| Insert Standard Items Into Week | Populates predefined recurring items |
+| Reset Weekly Scheduler | Clears all items from the table |
+| Insert Monthly Tasklist | Creates a 12-month task template |
+
+## Troubleshooting
+
+**Items not appearing when clicked?**
+- Make sure the table has the `<!-- scheduler-start -->` and `<!-- scheduler-end -->` markers
+- Try switching to Reading mode or Live Preview
+
+**Can't click cells?**
+- Ensure you're in Reading mode or Live Preview (not Source mode)
+- Refresh the note (close and reopen)
+
+**Colors not showing?**
+- HTML spans should render in Reading/Live Preview mode
+- Check that your theme supports inline HTML
+
+## Technical Details
+
+- Built with TypeScript
+- Uses Obsidian Plugin API
+- Stores data directly in Markdown
+- No external dependencies
+- Works offline
+
+## Support
+
+For issues or feature requests, check the plugin settings or reload the plugin.
+
+Enjoy organizing your schedule! 📅
