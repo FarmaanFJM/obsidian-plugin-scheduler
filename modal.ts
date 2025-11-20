@@ -1,29 +1,24 @@
 import { App, Modal, Setting } from 'obsidian';
-import { SchedulerItem, CategoryConfig, CellPosition } from './types';
+import { SchedulerItem, CategoryConfig } from './types';
 
-/**
- * Modal for adding scheduler items
- */
-export class SchedulerItemModal extends Modal {
+export class AddItemModal extends Modal {
     private name: string = '';
     private description: string = '';
     private selectedCategoryId: string = '';
-    private customColor: string = '';
-    private useCustomColor: boolean = false;
     
     private categories: CategoryConfig[];
-    private cellPosition: CellPosition;
-    private onSubmit: (item: SchedulerItem) => void;
+    private onSubmit: (item: Omit<SchedulerItem, 'id'>) => void;
+    private title: string;
 
     constructor(
         app: App,
         categories: CategoryConfig[],
-        cellPosition: CellPosition,
-        onSubmit: (item: SchedulerItem) => void
+        title: string,
+        onSubmit: (item: Omit<SchedulerItem, 'id'>) => void
     ) {
         super(app);
         this.categories = categories;
-        this.cellPosition = cellPosition;
+        this.title = title;
         this.onSubmit = onSubmit;
         
         // Set default category
@@ -35,13 +30,11 @@ export class SchedulerItemModal extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
+        contentEl.addClass('scheduler-modal');
 
-        contentEl.createEl('h2', { text: 'Add Scheduler Item' });
-
-        // Display cell position info
-        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        contentEl.createEl('h2', { text: 'Add Item' });
         contentEl.createEl('p', { 
-            text: `${days[this.cellPosition.day]} at ${this.cellPosition.time}`,
+            text: this.title,
             cls: 'scheduler-modal-subtitle'
         });
 
@@ -61,7 +54,7 @@ export class SchedulerItemModal extends Modal {
             .setName('Description')
             .setDesc('Optional details')
             .addTextArea(text => {
-                text.setPlaceholder('e.g., Cardio and weights')
+                text.setPlaceholder('Additional information')
                     .setValue(this.description)
                     .onChange(value => {
                         this.description = value;
@@ -81,57 +74,12 @@ export class SchedulerItemModal extends Modal {
                 dropdown.setValue(this.selectedCategoryId)
                     .onChange(value => {
                         this.selectedCategoryId = value;
-                        this.useCustomColor = false;
-                        this.updateColorPreview();
                     });
             });
 
-        // Color preview
-        const colorPreviewSetting = new Setting(contentEl)
-            .setName('Color Preview')
-            .setDesc('Current item color');
-
-        const previewDiv = colorPreviewSetting.controlEl.createDiv({
-            cls: 'scheduler-color-preview'
-        });
-        previewDiv.style.cssText = 'width: 50px; height: 30px; border: 1px solid #ccc; border-radius: 4px;';
-        
-        const updateColorPreview = () => {
-            const color = this.useCustomColor ? this.customColor : this.getCurrentCategoryColor();
-            previewDiv.style.backgroundColor = color;
-        };
-        this.updateColorPreview = updateColorPreview;
-        updateColorPreview();
-
-        // Custom color option
-        new Setting(contentEl)
-            .setName('Use Custom Color')
-            .setDesc('Override category color')
-            .addToggle(toggle => toggle
-                .setValue(this.useCustomColor)
-                .onChange(value => {
-                    this.useCustomColor = value;
-                    this.updateColorPreview();
-                }));
-
-        // Custom color input
-        new Setting(contentEl)
-            .setName('Custom Hex Color')
-            .setDesc('e.g., #FF5733')
-            .addText(text => text
-                .setPlaceholder('#000000')
-                .setValue(this.customColor)
-                .onChange(value => {
-                    this.customColor = value;
-                    if (this.useCustomColor) {
-                        this.updateColorPreview();
-                    }
-                }));
-
         // Buttons
-        const buttonContainer = contentEl.createDiv({ cls: 'scheduler-modal-buttons' });
-        buttonContainer.style.cssText = 'display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end;';
-
+        const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
+        
         const cancelBtn = buttonContainer.createEl('button', { text: 'Cancel' });
         cancelBtn.addEventListener('click', () => {
             this.close();
@@ -146,26 +94,15 @@ export class SchedulerItemModal extends Modal {
         });
     }
 
-    private updateColorPreview: () => void = () => {};
-
-    private getCurrentCategoryColor(): string {
-        const category = this.categories.find(cat => cat.id === this.selectedCategoryId);
-        return category ? category.color : '#000000';
-    }
-
     private handleSubmit() {
         if (!this.name.trim()) {
-            // Show error - name is required
             return;
         }
 
-        const color = this.useCustomColor ? this.customColor : this.getCurrentCategoryColor();
-
-        const item: SchedulerItem = {
+        const item: Omit<SchedulerItem, 'id'> = {
             name: this.name.trim(),
             description: this.description.trim(),
-            categoryId: this.selectedCategoryId,
-            color: color
+            categoryId: this.selectedCategoryId
         };
 
         this.onSubmit(item);

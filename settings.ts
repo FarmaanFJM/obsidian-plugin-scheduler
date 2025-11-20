@@ -1,10 +1,7 @@
 import { App, PluginSettingTab, Setting, Notice } from 'obsidian';
-import SchedulerPlugin from './main';
+import type SchedulerPlugin from './main';
 import { CategoryConfig } from './types';
 
-/**
- * Settings tab for the Scheduler plugin
- */
 export class SchedulerSettingTab extends PluginSettingTab {
     plugin: SchedulerPlugin;
 
@@ -41,18 +38,6 @@ export class SchedulerSettingTab extends PluginSettingTab {
                 .onClick(() => {
                     this.addNewCategory();
                 }));
-
-        // Standard items section
-        containerEl.createEl('h3', { text: 'Standard Items' });
-        containerEl.createEl('p', { 
-            text: 'Configure recurring items that can be auto-inserted into your schedule.',
-            cls: 'setting-item-description'
-        });
-
-        // Note about standard items
-        new Setting(containerEl)
-            .setName('Standard Items Configuration')
-            .setDesc('Use the "Insert Standard Items" command to populate your schedule with predefined items like Sleep, Gym, and Meals.');
     }
 
     private createCategorySetting(containerEl: HTMLElement, category: CategoryConfig, index: number) {
@@ -64,7 +49,7 @@ export class SchedulerSettingTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.categories[index].name = value;
                         await this.plugin.saveSettings();
-                        this.display(); // Refresh display
+                        this.plugin.refreshView();
                     });
                 text.inputEl.style.width = '150px';
             })
@@ -73,6 +58,7 @@ export class SchedulerSettingTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.categories[index].color = value;
                         await this.plugin.saveSettings();
+                        this.plugin.refreshView();
                     });
             })
             .addButton(button => button
@@ -82,7 +68,8 @@ export class SchedulerSettingTab extends PluginSettingTab {
                     this.plugin.settings.categories.splice(index, 1);
                     await this.plugin.saveSettings();
                     new Notice(`Deleted category: ${category.name}`);
-                    this.display(); // Refresh display
+                    this.plugin.refreshView();
+                    this.display();
                 }));
     }
 
@@ -96,6 +83,6 @@ export class SchedulerSettingTab extends PluginSettingTab {
         this.plugin.settings.categories.push(newCategory);
         await this.plugin.saveSettings();
         new Notice('Added new category');
-        this.display(); // Refresh display
+        this.display();
     }
 }

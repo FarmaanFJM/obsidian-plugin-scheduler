@@ -1,5 +1,5 @@
 {
-    "id": "scheduler-plugin",
+    "id": "obsidian-scheduler-plugin",
     "name": "Scheduler",
     "version": "1.0.0",
     "minAppVersion": "0.15.0",

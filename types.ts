@@ -1,6 +1,7 @@
 export interface SchedulerSettings {
     categories: CategoryConfig[];
-    standardItems: StandardItem[];
+    weeklySchedule: WeeklySchedule;
+    monthlyTasks: MonthlyTasks;
 }
 
 export interface CategoryConfig {
@@ -9,23 +10,32 @@ export interface CategoryConfig {
     color: string;
 }
 
-export interface StandardItem {
+export interface SchedulerItem {
+    id: string;
     name: string;
     description: string;
     categoryId: string;
-    days: number[]; // 0 = Monday, 6 = Sunday
-    startTime: string; // "HH:00" format
-    endTime: string;
 }
 
-export interface SchedulerItem {
-    name: string;
-    description: string;
-    categoryId: string;
-    color: string;
+// Weekly Schedule Structure
+export interface WeeklySchedule {
+    [day: string]: DaySchedule; // 0-6 (Monday-Sunday)
+}
+
+export interface DaySchedule {
+    [hour: string]: SchedulerItem[]; // "00"-"23"
+}
+
+// Monthly Tasks Structure
+export interface MonthlyTasks {
+    [month: string]: SchedulerItem[]; // "0"-"11" (Jan-Dec)
 }
 
 export interface CellPosition {
     day: number; // 0-6 (Monday-Sunday)
-    time: string; // "HH:00"
+    hour: number; // 0-23
+}
+
+export interface MonthPosition {
+    month: number; // 0-11 (Jan-Dec)
 }
