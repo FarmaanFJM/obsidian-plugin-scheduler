@@ -508,6 +508,271 @@
     box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
 }
 
+/* Schedule Grid for Standard Tasks */
+.schedule-grid-container {
+    margin: 20px 0;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 16px;
+    background-color: var(--background-secondary);
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.schedule-grid-subtitle {
+    color: var(--text-muted);
+    font-size: 0.9em;
+    margin-bottom: 12px;
+}
+
+.schedule-grid {
+    display: grid;
+    grid-template-columns: 60px repeat(7, 1fr);
+    gap: 1px;
+    background-color: var(--background-modifier-border);
+    border: 1px solid var(--background-modifier-border);
+}
+
+.schedule-grid-header {
+    display: contents;
+}
+
+.schedule-time-label {
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 0.75em;
+    font-weight: 600;
+    background-color: var(--background-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+}
+
+.schedule-day-header {
+    padding: 8px 4px;
+    text-align: center;
+    font-weight: 600;
+    background-color: var(--background-secondary);
+    color: var(--text-normal);
+    font-size: 0.85em;
+}
+
+.schedule-grid-row {
+    display: contents;
+}
+
+.schedule-grid-cell {
+    min-height: 24px;
+    background-color: var(--background-primary);
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+}
+
+.schedule-grid-cell:hover {
+    background-color: var(--background-modifier-hover);
+    border-color: var(--interactive-accent);
+}
+
+.schedule-grid-cell.selected {
+    background-color: var(--interactive-accent);
+    border-color: var(--interactive-accent);
+}
+
+.schedule-grid-cell.selected:hover {
+    background-color: var(--interactive-accent-hover);
+}
+
+/* Quick select buttons */
+.quick-select-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    justify-content: center;
+}
+
+.quick-select-buttons button {
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--background-modifier-border);
+    background-color: var(--background-secondary);
+    color: var(--text-normal);
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: all 0.2s;
+}
+
+.quick-select-buttons button:hover {
+    background-color: var(--background-modifier-hover);
+    border-color: var(--interactive-accent);
+}
+
+/* Sleep exception days */
+.sleep-days-selection {
+    display: flex;
+    gap: 8px;
+    margin: 12px 0;
+    flex-wrap: wrap;
+}
+
+.sleep-day-toggle-btn {
+    padding: 8px 16px;
+    border: 2px solid var(--interactive-accent);
+    border-radius: 6px;
+    background-color: var(--interactive-accent);
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.sleep-day-toggle-btn.excluded {
+    background-color: transparent;
+    color: var(--text-muted);
+    border-color: var(--background-modifier-border);
+}
+
+.sleep-day-toggle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Edit button for items */
+.item-buttons,
+.task-buttons {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.scheduler-item-card:hover .item-buttons,
+.task-card:hover .task-buttons {
+    opacity: 1;
+}
+
+.item-edit-btn,
+.task-edit-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background-color: rgba(52, 152, 219, 0.8);
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.item-edit-btn:hover,
+.task-edit-btn:hover {
+    background-color: rgba(52, 152, 219, 1);
+    transform: scale(1.1);
+}
+
+/* Update delete button to work with new button container */
+.item-delete-btn,
+.task-delete-btn {
+    position: static;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background-color: rgba(255, 0, 0, 0.7);
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.item-delete-btn:hover,
+.task-delete-btn:hover {
+    background-color: rgba(255, 0, 0, 0.9);
+    transform: scale(1.1);
+}
+
+/* Header button group */
+.header-button-group {
+    display: flex;
+    gap: 8px;
+}
+
+.refresh-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--interactive-accent);
+    background-color: rgba(52, 152, 219, 0.1);
+    color: var(--interactive-accent);
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+    background-color: var(--interactive-accent);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+/* Standard task warning in edit modal */
+.standard-task-warning {
+    background-color: rgba(255, 152, 0, 0.1);
+    border-left: 4px solid #ff9800;
+    padding: 12px;
+    margin-bottom: 16px;
+    border-radius: 4px;
+}
+
+.standard-task-warning p {
+    margin: 0;
+    color: var(--text-normal);
+    font-size: 0.9em;
+}
+
+/* Make edit modal scrollable */
+.edit-standard-task-modal {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .schedule-grid {
+        font-size: 0.85em;
+    }
+    
+    .schedule-grid-cell {
+        min-height: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .schedule-grid {
+        grid-template-columns: 50px repeat(7, 1fr);
+        font-size: 0.75em;
+    }
+    
+    .header-button-group {
+        flex-direction: column;
+    }
+}
+
 @media (max-width: 1200px) {
     .monthly-row {
         grid-template-columns: repeat(3, 1fr);

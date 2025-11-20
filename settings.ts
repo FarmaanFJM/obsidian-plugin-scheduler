@@ -1,5 +1,5 @@
 import type SchedulerPlugin from './main';
-import { CategoryConfig, StandardItemConfig } from './types';
+import { CategoryConfig, StandardItemConfig, DayHourSchedule } from './types';
 import { App, PluginSettingTab, Setting, Notice, Modal, TextComponent, DropdownComponent } from 'obsidian';
 
 export class SchedulerSettingTab extends PluginSettingTab {
@@ -23,12 +23,10 @@ export class SchedulerSettingTab extends PluginSettingTab {
             cls: 'setting-item-description'
         });
 
-        // Display existing categories
         this.plugin.settings.categories.forEach((category, index) => {
             this.createCategorySetting(containerEl, category, index);
         });
 
-        // Add new category button
         new Setting(containerEl)
             .setName('Add New Category')
             .setDesc('Create a new color category')
@@ -89,19 +87,90 @@ export class SchedulerSettingTab extends PluginSettingTab {
                     });
             });
 
-        // Standard/Recurring Tasks Section
+        // Wake Up Exception Days
+        new Setting(containerEl)
+            .setName('Skip "Wake Up" on Days')
+            .setDesc('Select days where Wake Up task should NOT be added')
+            .setClass('sleep-exception-setting');
+
+        const wakeDaysContainer = containerEl.createDiv({ cls: 'sleep-days-selection' });
+        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+        dayNames.forEach((dayName, index) => {
+            const dayBtn = wakeDaysContainer.createEl('button', {
+                text: dayName,
+                cls: 'sleep-day-toggle-btn'
+            });
+
+            if (this.plugin.settings.sleepSchedule.excludeWakeDays?.includes(index)) {
+                dayBtn.addClass('excluded');
+            }
+
+            dayBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const excludeDays = this.plugin.settings.sleepSchedule.excludeWakeDays || [];
+                const dayIndex = excludeDays.indexOf(index);
+
+                if (dayIndex > -1) {
+                    excludeDays.splice(dayIndex, 1);
+                    dayBtn.removeClass('excluded');
+                } else {
+                    excludeDays.push(index);
+                    dayBtn.addClass('excluded');
+                }
+
+                this.plugin.settings.sleepSchedule.excludeWakeDays = excludeDays;
+                await this.plugin.saveSettings();
+            });
+        });
+
+        // Sleep Exception Days
+        new Setting(containerEl)
+            .setName('Skip "Sleep" on Days')
+            .setDesc('Select days where Sleep task should NOT be added')
+            .setClass('sleep-exception-setting');
+
+        const sleepDaysContainer = containerEl.createDiv({ cls: 'sleep-days-selection' });
+
+        dayNames.forEach((dayName, index) => {
+            const dayBtn = sleepDaysContainer.createEl('button', {
+                text: dayName,
+                cls: 'sleep-day-toggle-btn'
+            });
+
+            if (this.plugin.settings.sleepSchedule.excludeSleepDays?.includes(index)) {
+                dayBtn.addClass('excluded');
+            }
+
+            dayBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const excludeDays = this.plugin.settings.sleepSchedule.excludeSleepDays || [];
+                const dayIndex = excludeDays.indexOf(index);
+
+                if (dayIndex > -1) {
+                    excludeDays.splice(dayIndex, 1);
+                    dayBtn.removeClass('excluded');
+                } else {
+                    excludeDays.push(index);
+                    dayBtn.addClass('excluded');
+                }
+
+                this.plugin.settings.sleepSchedule.excludeSleepDays = excludeDays;
+                await this.plugin.saveSettings();
+            });
+        });
+
+        // Recurring Tasks Section
         containerEl.createEl('h3', { text: 'Recurring Tasks' });
         containerEl.createEl('p', {
             text: 'Configure tasks that appear automatically on specific days and times.',
             cls: 'setting-item-description'
         });
 
-        // Display existing standard tasks
         this.plugin.settings.standardItems.forEach((task, index) => {
             this.createStandardTaskSetting(containerEl, task, index);
         });
 
-        // Add new standard task button
         new Setting(containerEl)
             .setName('Add Recurring Task')
             .setDesc('Create a new task that repeats weekly')
@@ -112,7 +181,7 @@ export class SchedulerSettingTab extends PluginSettingTab {
                     this.addNewStandardTask();
                 }));
 
-        // Commands info
+        // Task Management Section
         containerEl.createEl('h3', { text: 'Task Management' });
 
         new Setting(containerEl)
@@ -222,25 +291,27 @@ export class SchedulerSettingTab extends PluginSettingTab {
         const setting = new Setting(containerEl)
             .setName(task.name);
 
-        // Task details
+        // Build description from schedule
         const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        const taskDays = task.days.length > 0
-            ? task.days.map(d => days[d]).join(', ')
-            : 'Every day';
-        const taskTimes = task.hours.map(h =>
-            h.toString().padStart(2, '0') + ':00'
-        ).join(', ');
+        let scheduleDesc = '';
 
-        setting.setDesc(`Days: ${taskDays} | Times: ${taskTimes}`);
+        for (const dayStr in task.schedule) {
+            const day = parseInt(dayStr);
+            const hours = task.schedule[day];
+            if (hours.length > 0) {
+                const hoursList = hours.map(h => h.toString().padStart(2, '0') + ':00').join(', ');
+                scheduleDesc += `${days[day]}: ${hoursList}; `;
+            }
+        }
 
-        // Edit button
+        setting.setDesc(scheduleDesc || 'No schedule set');
+
         setting.addButton(button => button
             .setButtonText('Edit')
             .onClick(() => {
                 this.editStandardTask(index);
             }));
 
-        // Delete button
         setting.addButton(button => button
             .setButtonText('Delete')
             .setWarning()
@@ -257,14 +328,16 @@ export class SchedulerSettingTab extends PluginSettingTab {
             name: 'New Task',
             description: '',
             categoryId: this.plugin.settings.categories[0]?.id || 'other',
-            days: [0, 1, 2, 3, 4], // Mon-Fri by default
-            hours: [9] // 09:00 by default
+            schedule: {
+                0: [9], // Monday 09:00 by default
+            }
         };
 
         const modal = new EditStandardTaskModal(
             this.app,
             this.plugin,
             newTask,
+            null,
             async (createdTask) => {
                 this.plugin.settings.standardItems.push(createdTask);
                 await this.plugin.saveSettings();
@@ -277,13 +350,20 @@ export class SchedulerSettingTab extends PluginSettingTab {
 
     private editStandardTask(index: number) {
         const task = this.plugin.settings.standardItems[index];
+        const oldName = task.name;
+
         const modal = new EditStandardTaskModal(
             this.app,
             this.plugin,
             task,
+            oldName,
             async (updatedTask) => {
                 this.plugin.settings.standardItems[index] = updatedTask;
                 await this.plugin.saveSettings();
+
+                // Update all instances in the scheduler
+                this.plugin.updateStandardTask(oldName, updatedTask);
+
                 new Notice('Updated recurring task!');
                 this.display();
             }
@@ -292,43 +372,50 @@ export class SchedulerSettingTab extends PluginSettingTab {
     }
 }
 
-// Edit Standard Task Modal Class
+// Edit Standard Task Modal with Day×Hour Grid
 class EditStandardTaskModal extends Modal {
     task: StandardItemConfig;
     plugin: SchedulerPlugin;
+    oldTaskName: string | null;
     onSubmit: (task: StandardItemConfig) => void;
 
     private nameInput: TextComponent;
     private descInput: HTMLTextAreaElement;
     private categoryDropdown: DropdownComponent;
-    private selectedDays: Set<number>;
-    private selectedHours: Set<number>;
+    private selectedSchedule: DayHourSchedule; // day -> hours[]
 
     constructor(
         app: App,
         plugin: SchedulerPlugin,
         task: StandardItemConfig,
+        oldTaskName: string | null,
         onSubmit: (task: StandardItemConfig) => void
     ) {
         super(app);
         this.plugin = plugin;
-        this.task = { ...task }; // Clone
+        this.task = { ...task };
+        this.oldTaskName = oldTaskName;
         this.onSubmit = onSubmit;
-        this.selectedDays = new Set(task.days);
-        this.selectedHours = new Set(task.hours);
+
+        // Deep clone schedule
+        this.selectedSchedule = {};
+        for (const day in task.schedule) {
+            this.selectedSchedule[parseInt(day)] = [...task.schedule[day]];
+        }
     }
 
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
-        contentEl.createEl('h2', { text: 'Edit Recurring Task' });
+        contentEl.addClass('edit-standard-task-modal');
+        contentEl.createEl('h2', { text: this.oldTaskName ? 'Edit Recurring Task' : 'Add Recurring Task' });
 
         // Name
         new Setting(contentEl)
             .setName('Task Name')
             .addText(text => {
                 this.nameInput = text;
-                text.setPlaceholder('e.g., Gym')
+                text.setPlaceholder('e.g., Gym, School')
                     .setValue(this.task.name);
             });
 
@@ -353,58 +440,15 @@ class EditStandardTaskModal extends Modal {
                 dropdown.setValue(this.task.categoryId);
             });
 
-        // Days selection
-        contentEl.createEl('h3', { text: 'Days' });
-        const daysContainer = contentEl.createDiv({ cls: 'days-selection' });
-        const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
-        dayNames.forEach((dayName, index) => {
-            const dayBtn = daysContainer.createEl('button', {
-                text: dayName.substring(0, 3),
-                cls: 'day-toggle-btn'
-            });
-
-            if (this.selectedDays.has(index)) {
-                dayBtn.addClass('active');
-            }
-
-            dayBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (this.selectedDays.has(index)) {
-                    this.selectedDays.delete(index);
-                    dayBtn.removeClass('active');
-                } else {
-                    this.selectedDays.add(index);
-                    dayBtn.addClass('active');
-                }
-            });
+        // Schedule Grid Header
+        contentEl.createEl('h3', { text: 'Schedule (Click to toggle time slots)' });
+        contentEl.createEl('p', {
+            text: 'Select which hours this task appears on each day',
+            cls: 'schedule-grid-subtitle'
         });
 
-        // Hours selection
-        contentEl.createEl('h3', { text: 'Times' });
-        const hoursContainer = contentEl.createDiv({ cls: 'hours-selection' });
-
-        for (let h = 0; h < 24; h++) {
-            const hourBtn = hoursContainer.createEl('button', {
-                text: h.toString().padStart(2, '0') + ':00',
-                cls: 'hour-toggle-btn'
-            });
-
-            if (this.selectedHours.has(h)) {
-                hourBtn.addClass('active');
-            }
-
-            hourBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (this.selectedHours.has(h)) {
-                    this.selectedHours.delete(h);
-                    hourBtn.removeClass('active');
-                } else {
-                    this.selectedHours.add(h);
-                    hourBtn.addClass('active');
-                }
-            });
-        }
+        // Day×Hour Grid
+        this.renderScheduleGrid(contentEl);
 
         // Buttons
         const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
@@ -419,6 +463,121 @@ class EditStandardTaskModal extends Modal {
         saveBtn.addEventListener('click', () => this.handleSave());
     }
 
+    renderScheduleGrid(container: HTMLElement) {
+        const gridContainer = container.createDiv({ cls: 'schedule-grid-container' });
+        const grid = gridContainer.createDiv({ cls: 'schedule-grid' });
+
+        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+        // Header row with day names
+        const headerRow = grid.createDiv({ cls: 'schedule-grid-header' });
+        headerRow.createDiv({ cls: 'schedule-time-label', text: 'Time' });
+        dayNames.forEach(day => {
+            headerRow.createDiv({ cls: 'schedule-day-header', text: day });
+        });
+
+        // Hour rows (00:00 - 23:00)
+        for (let hour = 0; hour < 24; hour++) {
+            const hourRow = grid.createDiv({ cls: 'schedule-grid-row' });
+
+            // Time label
+            const timeLabel = hourRow.createDiv({
+                cls: 'schedule-time-label',
+                text: hour.toString().padStart(2, '0') + ':00'
+            });
+
+            // Day cells
+            for (let day = 0; day < 7; day++) {
+                const cell = hourRow.createDiv({ cls: 'schedule-grid-cell' });
+                cell.dataset.day = day.toString();
+                cell.dataset.hour = hour.toString();
+
+                // Check if this slot is selected
+                if (this.selectedSchedule[day]?.includes(hour)) {
+                    cell.addClass('selected');
+                }
+
+                // Click to toggle
+                cell.addEventListener('click', () => {
+                    this.toggleScheduleSlot(day, hour, cell);
+                });
+            }
+        }
+
+        // Quick select buttons
+        const quickSelect = gridContainer.createDiv({ cls: 'quick-select-buttons' });
+
+        const selectAllBtn = quickSelect.createEl('button', { text: 'Select All' });
+        selectAllBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.selectAll();
+            this.rerenderGrid(container);
+        });
+
+        const clearAllBtn = quickSelect.createEl('button', { text: 'Clear All' });
+        clearAllBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.clearAll();
+            this.rerenderGrid(container);
+        });
+
+        const selectWeekdaysBtn = quickSelect.createEl('button', { text: 'Weekdays 9-17' });
+        selectWeekdaysBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.selectWeekdaysWorkHours();
+            this.rerenderGrid(container);
+        });
+    }
+
+    toggleScheduleSlot(day: number, hour: number, cell: HTMLElement) {
+        if (!this.selectedSchedule[day]) {
+            this.selectedSchedule[day] = [];
+        }
+
+        const index = this.selectedSchedule[day].indexOf(hour);
+        if (index > -1) {
+            // Remove
+            this.selectedSchedule[day].splice(index, 1);
+            cell.removeClass('selected');
+        } else {
+            // Add
+            this.selectedSchedule[day].push(hour);
+            this.selectedSchedule[day].sort((a, b) => a - b);
+            cell.addClass('selected');
+        }
+    }
+
+    selectAll() {
+        for (let day = 0; day < 7; day++) {
+            this.selectedSchedule[day] = [];
+            for (let hour = 0; hour < 24; hour++) {
+                this.selectedSchedule[day].push(hour);
+            }
+        }
+    }
+
+    clearAll() {
+        this.selectedSchedule = {};
+    }
+
+    selectWeekdaysWorkHours() {
+        this.clearAll();
+        for (let day = 0; day < 5; day++) { // Mon-Fri
+            this.selectedSchedule[day] = [];
+            for (let hour = 9; hour <= 17; hour++) {
+                this.selectedSchedule[day].push(hour);
+            }
+        }
+    }
+
+    rerenderGrid(container: HTMLElement) {
+        const gridContainer = container.querySelector('.schedule-grid-container');
+        if (gridContainer) {
+            gridContainer.remove();
+        }
+        this.renderScheduleGrid(container);
+    }
+
     handleSave() {
         const name = this.nameInput.getValue().trim();
         if (!name) {
@@ -426,13 +585,17 @@ class EditStandardTaskModal extends Modal {
             return;
         }
 
-        if (this.selectedDays.size === 0) {
-            new Notice('Please select at least one day!');
-            return;
+        // Check if at least one slot is selected
+        let hasSlots = false;
+        for (const day in this.selectedSchedule) {
+            if (this.selectedSchedule[day].length > 0) {
+                hasSlots = true;
+                break;
+            }
         }
 
-        if (this.selectedHours.size === 0) {
-            new Notice('Please select at least one time!');
+        if (!hasSlots) {
+            new Notice('Please select at least one time slot!');
             return;
         }
 
@@ -440,8 +603,7 @@ class EditStandardTaskModal extends Modal {
             name: name,
             description: this.descInput.value.trim(),
             categoryId: this.categoryDropdown.getValue(),
-            days: Array.from(this.selectedDays).sort((a, b) => a - b),
-            hours: Array.from(this.selectedHours).sort((a, b) => a - b)
+            schedule: this.selectedSchedule
         };
 
         this.onSubmit(updatedTask);
