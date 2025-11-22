@@ -1,13 +1,14 @@
 /* Main Scheduler Container */
 .scheduler-container {
     padding: 20px;
-    overflow-y: auto;
     height: 100%;
     background-color: var(--background-primary);
+    overflow: auto;              /* ⬅ horizontal + vertical scroll here */
 }
 
+/* Force a “desktop” width that never shrinks */
 .scheduler-main {
-    max-width: 100%;
+    min-width: 1400px;           
 }
 
 /* Weekly Scheduler Section */
@@ -117,6 +118,7 @@
     margin-bottom: 6px;
     border-left-width: 4px;
     border-left-style: solid;
+    max-width: 100%;
 }
 
 /* Light theme base */
@@ -278,8 +280,11 @@
     font-weight: 600;
     font-size: 0.9em;
     margin-bottom: 4px;
-    padding-right: 50px;
+    padding-right: 25px;
     line-height: 1.4;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .item-description,
@@ -289,6 +294,9 @@
     word-wrap: break-word;
     line-height: 1.3;
     margin-top: 4px;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .scheduler-item-card:not([style*="background"]) .item-name,
@@ -1027,4 +1035,11 @@
 .edit-standard-task-modal {
     max-height: 80vh;
     overflow-y: auto;
+}
+
+/* === FORCE DESKTOP WIDTH ON MOBILE === */
+.scheduler-monthly-section,
+.monthly-grid,
+.monthly-row {
+    min-width: 1600px !important;
 }
