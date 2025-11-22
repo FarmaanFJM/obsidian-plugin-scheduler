@@ -15,6 +15,27 @@
     margin-bottom: 40px;
 }
 
+.week-jump-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 8px;
+}
+
+.week-jump-input {
+    padding: 4px 6px;
+    font-size: 0.85em;
+    border-radius: 4px;
+    border: 1px solid var(--background-modifier-border);
+    background-color: var(--background-secondary);
+    color: var(--text-normal);
+}
+
+.week-jump-input:focus {
+    outline: none;
+    border-color: var(--interactive-accent);
+}
+
 .scheduler-weekly-section h2 {
     margin-bottom: 20px;
     color: var(--text-normal);

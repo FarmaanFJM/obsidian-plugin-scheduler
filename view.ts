@@ -98,6 +98,41 @@ export class SchedulerView extends ItemView {
             this.refresh();
         });
 
+        // ================== NEW: Jump to Date ==================
+        const jumpContainer = weekNavContainer.createDiv({ cls: 'week-jump-container' });
+
+        const jumpInput = jumpContainer.createEl('input') as HTMLInputElement;
+        jumpInput.type = 'date';
+        jumpInput.addClass('week-jump-input');
+
+        // Prefill with current Monday
+        const isoMonday = DateUtils.toISODateString(startDate);
+        jumpInput.value = isoMonday;
+
+        const jumpBtn = jumpContainer.createEl('button', {
+            cls: 'nav-btn week-jump-btn',
+            text: 'Go'
+        });
+
+        jumpBtn.addEventListener('click', async () => {
+            if (!jumpInput.value) return;
+
+            const targetDate = new Date(jumpInput.value);
+            if (isNaN(targetDate.getTime())) return;
+
+            const newWeekNumber = DateUtils.getWeekNumber(targetDate);
+            const newYear = DateUtils.getYearForWeek(newWeekNumber, targetDate);
+
+            if (this.plugin.currentYear !== newYear) {
+                await this.plugin.loadYearData(newYear);
+            }
+
+            this.plugin.currentWeek = newWeekNumber;
+            this.plugin.currentYear = newYear;
+            this.refresh();
+        });
+        // =======================================================
+
         const buttonGroup = weeklyHeader.createDiv({ cls: 'header-button-group' });
 
         // Refresh button
@@ -110,7 +145,7 @@ export class SchedulerView extends ItemView {
             new Notice('Scheduler refreshed!');
         });
 
-        // Populate Tasks button (NEW - moved here)
+        // Populate Tasks button
         const populateBtn = buttonGroup.createEl('button', {
             cls: 'populate-btn',
             text: 'Insert Standard Tasks'
@@ -119,7 +154,7 @@ export class SchedulerView extends ItemView {
             this.plugin.populateStandardTasks();
         });
 
-        // Clear Non-Standard button (RENAMED)
+        // Clear Non-Standard button
         const clearNonStandardBtn = buttonGroup.createEl('button', {
             cls: 'clear-weekly-btn',
             text: '🗑️ Clear Non-Standard Tasks'
@@ -131,7 +166,7 @@ export class SchedulerView extends ItemView {
             }
         });
 
-        // Clear All Week Tasks button (RENAMED)
+        // Clear All Week Tasks button
         const clearAllBtn = buttonGroup.createEl('button', {
             cls: 'clear-all-btn',
             text: '🗑️ Clear All Week Tasks'
@@ -143,6 +178,7 @@ export class SchedulerView extends ItemView {
             }
         });
     }
+
 
     renderMonthlyHeader(container: Element) {
         const monthlyHeader = container.createDiv({ cls: 'scheduler-section-header' });
