@@ -77,15 +77,20 @@ export class DateUtils {
      * Get the date of a specific week number in a year
      */
     static getDateOfWeek(weekNumber: number, year: number): Date {
-        const simple = new Date(year, 0, 1 + (weekNumber - 1) * 7);
-        const dow = simple.getDay();
-        const ISOweekStart = simple;
-        if (dow <= 4) {
-            ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
-        } else {
-            ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
-        }
-        return ISOweekStart;
+        // January 4th is always in week 1 according to ISO 8601
+        const jan4 = new Date(year, 0, 4);
+        
+        // Get the Monday of week 1
+        const dayOfWeek = jan4.getDay();
+        const diff = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek; // Adjust Sunday to -6, others normally
+        const week1Monday = new Date(jan4);
+        week1Monday.setDate(jan4.getDate() + diff);
+        
+        // Add the number of weeks to get to the target week
+        const targetDate = new Date(week1Monday);
+        targetDate.setDate(week1Monday.getDate() + (weekNumber - 1) * 7);
+        
+        return targetDate;
     }
 
     /**
@@ -96,7 +101,34 @@ export class DateUtils {
         const weekNumber = this.getWeekNumber(now);
         const startDate = this.getMonday(now);
         const endDate = this.getSunday(now);
-        return { weekNumber, year: now.getFullYear(), startDate, endDate };
+        
+        // ISO week-year can differ from calendar year
+        // Week 1 might belong to the previous year if it starts in December
+        // Week 52/53 might belong to the next year if it ends in January
+        const weekYear = this.getYearForWeek(weekNumber, now);
+        
+        return { weekNumber, year: weekYear, startDate, endDate };
+    }
+
+    /**
+     * Get the ISO week-year for a given week number and date
+     * This handles edge cases where the ISO week year differs from calendar year
+     */
+    static getYearForWeek(weekNumber: number, date: Date): number {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        
+        // If it's week 1 and we're in December, it belongs to next year
+        if (weekNumber === 1 && month === 11) {
+            return year + 1;
+        }
+        
+        // If it's week 52 or 53 and we're in January, it belongs to previous year
+        if ((weekNumber === 52 || weekNumber === 53) && month === 0) {
+            return year - 1;
+        }
+        
+        return year;
     }
 
     /**

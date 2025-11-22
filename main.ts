@@ -196,11 +196,17 @@ export default class SchedulerPlugin extends Plugin {
     // ========== WEEK NAVIGATION ==========
 
     async changeWeek(delta: number): Promise<void> {
-        // Calculate new week
-        const currentDate = DateUtils.getDateOfWeek(this.currentWeek, this.currentYear);
-        const newDate = DateUtils.addWeeks(currentDate, delta);
-        const newWeekNumber = DateUtils.getWeekNumber(newDate);
-        const newYear = newDate.getFullYear();
+        // Get Monday of current week
+        const currentMonday = DateUtils.getDateOfWeek(this.currentWeek, this.currentYear);
+
+        // Add weeks
+        const newMonday = DateUtils.addWeeks(currentMonday, delta);
+
+        // Get the week number of the new date
+        const newWeekNumber = DateUtils.getWeekNumber(newMonday);
+
+        // Get the correct year for this week (handles ISO week-year edge cases)
+        const newYear = DateUtils.getYearForWeek(newWeekNumber, newMonday);
 
         // Check if year changed
         if (newYear !== this.currentYear) {
