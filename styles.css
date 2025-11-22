@@ -1043,3 +1043,19 @@
 .monthly-row {
     min-width: 1600px !important;
 }
+
+/* DARK THEME — Improve readability for GOALS */
+.theme-dark .item-type-goal .item-name,
+.theme-dark .item-type-goal .item-description,
+.theme-dark .task-card.item-type-goal .task-name,
+.theme-dark .task-card.item-type-goal .task-description {
+    color: #ffffff !important;
+}
+
+/* DARK THEME — Improve readability for TASKS */
+.theme-dark .item-type-task .item-name,
+.theme-dark .item-type-task .item-description,
+.theme-dark .task-card.item-type-task .task-name,
+.theme-dark .task-card.item-type-task .task-description {
+    color: #ffffff !important;
+}
