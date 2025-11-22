@@ -88,7 +88,8 @@
 }
 
 /* Scheduler Item Cards - IMPROVED CONTRAST */
-.scheduler-item-card {
+.scheduler-item-card,
+.task-card {
     padding: 8px;
     border-radius: 4px;
     position: relative;
@@ -97,47 +98,83 @@
     margin-bottom: 4px;
 }
 
-.theme-light .scheduler-item-card {
+.theme-light .scheduler-item-card,
+.theme-light .task-card {
     background-color: rgba(255, 255, 255, 0.95);
 }
 
-.theme-dark .scheduler-item-card {
+.theme-dark .scheduler-item-card,
+.theme-dark .task-card {
     background-color: rgba(0, 0, 0, 0.4);
 }
 
-.scheduler-item-card:hover {
+.scheduler-item-card:hover,
+.task-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
 }
 
-.theme-dark .scheduler-item-card:hover {
+.theme-dark .scheduler-item-card:hover,
+.theme-dark .task-card:hover {
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
 }
 
-.scheduler-item-card[data-standard="true"]::after {
-    content: "⟳";
-    position: absolute;
-    bottom: 4px;
-    right: 4px;
-    font-size: 0.7em;
-    opacity: 0.5;
+/* Item Type Styling */
+.item-type-goal {
+    border-left-width: 5px !important;
 }
 
-.scheduler-item-card[data-standard="true"]:hover::after {
-    opacity: 0.8;
+.item-type-deadline {
+    animation: pulse-glow 2s ease-in-out infinite;
+    border-left-width: 5px !important;
 }
 
-.item-name {
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15), 0 0 10px rgba(255, 152, 0, 0.3);
+    }
+    50% {
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2), 0 0 20px rgba(255, 152, 0, 0.6);
+    }
+}
+
+.item-type-task.item-completed {
+    opacity: 0.6;
+}
+
+.item-type-task.item-completed .item-name,
+.item-type-task.item-completed .task-name {
+    text-decoration: line-through;
+}
+
+/* Item Content Layout */
+.item-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.item-type-icon {
+    font-size: 0.85em;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.item-name,
+.task-name {
     font-weight: 600;
     font-size: 0.9em;
     margin-bottom: 4px;
-    padding-right: 20px;
+    padding-right: 50px;
+    flex: 1;
 }
 
-.item-description {
+.item-description,
+.task-description {
     font-size: 0.85em;
     white-space: pre-wrap;
     word-wrap: break-word;
+    margin-left: 20px;
 }
 
 .scheduler-item-card:not([style*="background"]) .item-name,
@@ -256,7 +293,7 @@
 }
 
 .task-card:hover {
-    transform: translateX(4px);
+    transform: translateY(-2px);
 }
 
 .task-name {
@@ -264,7 +301,7 @@
     font-size: 0.9em;
     margin-bottom: 4px;
     color: var(--text-normal);
-    padding-right: 24px;
+    padding-right: 50px;
 }
 
 .task-description {
@@ -671,6 +708,30 @@
     opacity: 1;
 }
 
+.item-check-btn,
+.task-check-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: none;
+    background-color: rgba(46, 204, 113, 0.8);
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.item-check-btn:hover,
+.task-check-btn:hover {
+    background-color: rgba(46, 204, 113, 1);
+    transform: scale(1.1);
+}
+
 .item-edit-btn,
 .task-edit-btn {
     width: 20px;
@@ -707,7 +768,8 @@
     gap: 8px;
 }
 
-.refresh-btn {
+.refresh-btn,
+.populate-btn {
     padding: 8px 16px;
     border-radius: 6px;
     border: 1px solid var(--interactive-accent);
@@ -719,11 +781,50 @@
     transition: all 0.2s;
 }
 
-.refresh-btn:hover {
+.refresh-btn:hover,
+.populate-btn:hover {
     background-color: var(--interactive-accent);
     color: white;
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.clear-weekly-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 152, 0, 0.3);
+    background-color: rgba(255, 152, 0, 0.1);
+    color: #ff9800;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.clear-weekly-btn:hover {
+    background-color: #ff9800;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+}
+
+.clear-all-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    background-color: rgba(231, 76, 60, 0.1);
+    color: #e74c3c;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.clear-all-btn:hover {
+    background-color: #e74c3c;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
 }
 
 .standard-task-warning {

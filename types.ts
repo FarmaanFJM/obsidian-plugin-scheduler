@@ -37,11 +37,15 @@ export interface CategoryConfig {
     color: string;
 }
 
+export type ItemType = 'regular' | 'task' | 'goal' | 'deadline';
+
 export interface SchedulerItem {
     id: string;
     name: string;
     description: string;
     categoryId: string;
+    itemType: ItemType; // Type of item with different visual styling
+    completed?: boolean; // For 'task' type items
     isStandard?: boolean;
     standardTaskName?: string; // Link back to standard task for updates
 }

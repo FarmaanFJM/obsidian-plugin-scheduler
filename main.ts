@@ -378,6 +378,8 @@ export default class SchedulerPlugin extends Plugin {
                 name: 'Sleep',
                 description: '',
                 categoryId: 'other',
+                itemType: 'regular',
+                completed: false,
                 isStandard: true,
                 standardTaskName: 'Sleep'
             };
@@ -386,6 +388,8 @@ export default class SchedulerPlugin extends Plugin {
                 name: 'Wake Up',
                 description: '',
                 categoryId: 'other',
+                itemType: 'regular',
+                completed: false,
                 isStandard: true,
                 standardTaskName: 'Wake Up'
             };
@@ -419,6 +423,8 @@ export default class SchedulerPlugin extends Plugin {
                 name: standard.name,
                 description: standard.description,
                 categoryId: standard.categoryId,
+                itemType: 'regular',
+                completed: false,
                 isStandard: true,
                 standardTaskName: standard.name
             };
@@ -471,6 +477,8 @@ export default class SchedulerPlugin extends Plugin {
             name: newTask.name,
             description: newTask.description,
             categoryId: newTask.categoryId,
+            itemType: 'regular',
+            completed: false,
             isStandard: true,
             standardTaskName: newTask.name
         };

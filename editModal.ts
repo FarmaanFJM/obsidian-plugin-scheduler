@@ -1,11 +1,13 @@
 import { App, Modal, Setting, Notice } from 'obsidian';
-import { SchedulerItem, CategoryConfig } from './types';
+import { SchedulerItem, CategoryConfig, ItemType } from './types';
 
 export class EditItemModal extends Modal {
     private item: SchedulerItem;
     private name: string;
     private description: string;
     private selectedCategoryId: string;
+    private selectedItemType: ItemType;
+    
     private categories: CategoryConfig[];
     private onSubmit: (updates: Partial<SchedulerItem>) => void;
 
@@ -24,6 +26,7 @@ export class EditItemModal extends Modal {
         this.name = item.name;
         this.description = item.description;
         this.selectedCategoryId = item.categoryId;
+        this.selectedItemType = item.itemType || 'regular';
     }
 
     onOpen() {
@@ -66,6 +69,21 @@ export class EditItemModal extends Modal {
                 text.inputEl.style.width = '100%';
             });
 
+        // Item Type dropdown
+        new Setting(contentEl)
+            .setName('Type')
+            .setDesc('Item type affects visual appearance')
+            .addDropdown(dropdown => {
+                dropdown.addOption('regular', '⚪ Regular');
+                dropdown.addOption('task', '✓ Task');
+                dropdown.addOption('goal', '🎯 Goal');
+                dropdown.addOption('deadline', '⏰ Deadline');
+                dropdown.setValue(this.selectedItemType)
+                    .onChange(value => {
+                        this.selectedItemType = value as ItemType;
+                    });
+            });
+
         // Category dropdown
         new Setting(contentEl)
             .setName('Category')
@@ -106,7 +124,8 @@ export class EditItemModal extends Modal {
         const updates: Partial<SchedulerItem> = {
             name: this.name.trim(),
             description: this.description.trim(),
-            categoryId: this.selectedCategoryId
+            categoryId: this.selectedCategoryId,
+            itemType: this.selectedItemType
         };
 
         this.onSubmit(updates);

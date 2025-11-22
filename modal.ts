@@ -1,10 +1,11 @@
 import { App, Modal, Setting } from 'obsidian';
-import { SchedulerItem, CategoryConfig } from './types';
+import { SchedulerItem, CategoryConfig, ItemType } from './types';
 
 export class AddItemModal extends Modal {
     private name: string = '';
     private description: string = '';
     private selectedCategoryId: string = '';
+    private selectedItemType: ItemType = 'regular';
     
     private categories: CategoryConfig[];
     private onSubmit: (item: Omit<SchedulerItem, 'id'>) => void;
@@ -63,6 +64,21 @@ export class AddItemModal extends Modal {
                 text.inputEl.style.width = '100%';
             });
 
+        // Item Type dropdown
+        new Setting(contentEl)
+            .setName('Type')
+            .setDesc('Item type affects visual appearance')
+            .addDropdown(dropdown => {
+                dropdown.addOption('regular', '⚪ Regular');
+                dropdown.addOption('task', '✓ Task');
+                dropdown.addOption('goal', '🎯 Goal');
+                dropdown.addOption('deadline', '⏰ Deadline');
+                dropdown.setValue(this.selectedItemType)
+                    .onChange(value => {
+                        this.selectedItemType = value as ItemType;
+                    });
+            });
+
         // Category dropdown
         new Setting(contentEl)
             .setName('Category')
@@ -102,7 +118,9 @@ export class AddItemModal extends Modal {
         const item: Omit<SchedulerItem, 'id'> = {
             name: this.name.trim(),
             description: this.description.trim(),
-            categoryId: this.selectedCategoryId
+            categoryId: this.selectedCategoryId,
+            itemType: this.selectedItemType,
+            completed: false
         };
 
         this.onSubmit(item);

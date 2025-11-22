@@ -186,7 +186,7 @@ export class SchedulerSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Populate Standard Tasks')
-            .setDesc('Add Sleep, Wake-up, and recurring tasks to your schedule')
+            .setDesc('Add Sleep, Wake-up, and recurring tasks to current week')
             .addButton(button => button
                 .setButtonText('Populate Now')
                 .onClick(() => {
@@ -195,12 +195,12 @@ export class SchedulerSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Clear Non-Standard Tasks')
-            .setDesc('Remove all manually added tasks while keeping recurring tasks')
+            .setDesc('Remove all manually added tasks from current week while keeping recurring tasks')
             .addButton(button => button
                 .setButtonText('Clear Now')
                 .setWarning()
                 .onClick(() => {
-                    const confirmed = confirm('Clear all non-standard tasks? This cannot be undone.');
+                    const confirmed = confirm('Clear all non-standard tasks from current week? This cannot be undone.');
                     if (confirmed) {
                         this.plugin.clearNonStandardTasks();
                     }
@@ -208,12 +208,12 @@ export class SchedulerSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Clear ALL Tasks')
-            .setDesc('Remove ALL tasks including standard/recurring tasks - complete reset')
+            .setDesc('Remove ALL tasks from current week including standard/recurring tasks')
             .addButton(button => button
                 .setButtonText('Clear Everything')
                 .setWarning()
                 .onClick(() => {
-                    const confirmed = confirm('⚠️ Clear ALL tasks including Sleep, Wake-up, and recurring tasks? This CANNOT be undone!');
+                    const confirmed = confirm('⚠️ Clear ALL tasks from current week including Sleep, Wake-up, and recurring tasks? This CANNOT be undone!');
                     if (confirmed) {
                         this.plugin.clearAllTasks();
                     }
@@ -382,7 +382,7 @@ class EditStandardTaskModal extends Modal {
     private nameInput: TextComponent;
     private descInput: HTMLTextAreaElement;
     private categoryDropdown: DropdownComponent;
-    private selectedSchedule: DayHourSchedule; // day -> hours[]
+    private selectedSchedule: DayHourSchedule;
 
     constructor(
         app: App,
