@@ -3,6 +3,9 @@ import { SchedulerSettings, SchedulerItem, CategoryConfig, StandardItemConfig } 
 import { SchedulerSettingTab } from './settings';
 import { SchedulerView, VIEW_TYPE_SCHEDULER } from './view';
 
+const SCHEDULER_DATA_FOLDER = 'SchedulerData';
+const SCHEDULER_DATA_FILE = `${SCHEDULER_DATA_FOLDER}/data.json`;
+
 const DEFAULT_SETTINGS: SchedulerSettings = {
     categories: [
         { id: 'school', name: 'School', color: '#8B4513' },
@@ -105,24 +108,20 @@ export default class SchedulerPlugin extends Plugin {
 
     async activateView() {
         const { workspace } = this.app;
-        let leaf: WorkspaceLeaf | null = null;
-        const leaves = workspace.getLeavesOfType(VIEW_TYPE_SCHEDULER);
 
-        if (leaves.length > 0) {
-            leaf = leaves[0];
-        } else {
-            leaf = workspace.getRightLeaf(false);
-            if (leaf) {
-                await leaf.setViewState({
-                    type: VIEW_TYPE_SCHEDULER,
-                    active: true,
-                });
-            }
+        // Try to find existing scheduler leaf
+        let leaf = workspace.getLeavesOfType(VIEW_TYPE_SCHEDULER).first();
+
+        if (!leaf) {
+            // Open a brand new main pane (center pane)
+            leaf = workspace.getLeaf('tab');
+            await leaf.setViewState({
+                type: VIEW_TYPE_SCHEDULER,
+                active: true,
+            });
         }
 
-        if (leaf) {
-            workspace.revealLeaf(leaf);
-        }
+        workspace.revealLeaf(leaf);
     }
 
     initializeSchedule() {
@@ -462,11 +461,52 @@ export default class SchedulerPlugin extends Plugin {
     }
 
     async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        const adapter = this.app.vault.adapter;
+
+        // Ensure folder exists
+        if (!(await adapter.exists(SCHEDULER_DATA_FOLDER))) {
+            await adapter.mkdir(SCHEDULER_DATA_FOLDER);
+        }
+
+        let loaded: any = null;
+
+        // If file exists → load it
+        if (await adapter.exists(SCHEDULER_DATA_FILE)) {
+            try {
+                const data = await adapter.read(SCHEDULER_DATA_FILE);
+                loaded = JSON.parse(data);
+            } catch (e) {
+                console.error("Scheduler: Failed to read data.json, using defaults:", e);
+            }
+        }
+
+        // If file does NOT exist → create new file
+        if (!loaded) {
+            loaded = DEFAULT_SETTINGS;
+            await adapter.write(
+                SCHEDULER_DATA_FILE,
+                JSON.stringify(loaded, null, 2)
+            );
+        }
+
+        // Apply settings
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded);
         this.initializeSchedule();
     }
 
     async saveSettings() {
-        await this.saveData(this.settings);
+        const adapter = this.app.vault.adapter;
+
+        // Ensure folder exists
+        if (!(await adapter.exists(SCHEDULER_DATA_FOLDER))) {
+            await adapter.mkdir(SCHEDULER_DATA_FOLDER);
+        }
+
+        // Save settings
+        await adapter.write(
+            SCHEDULER_DATA_FILE,
+            JSON.stringify(this.settings, null, 2)
+        );
     }
+
 }

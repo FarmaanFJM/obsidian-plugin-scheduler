@@ -155,20 +155,35 @@ export class SchedulerView extends ItemView {
                 itemCard.style.backgroundColor = category.color;
                 itemCard.style.borderLeft = `4px solid ${category.color}`;
 
+                // Calculate contrast color for text
                 const textColor = this.getContrastColor(category.color);
-                itemCard.style.color = textColor;
-            }
 
-            itemCard.createDiv({
-                cls: 'item-name',
-                text: item.name
-            });
+                // Create name element and set color
+                const nameDiv = itemCard.createDiv({ cls: 'item-name' });
+                nameDiv.setText(item.name);
+                nameDiv.style.color = textColor;
 
-            if (item.description) {
+                // Create description element if it exists
+                if (item.description) {
+                    const descDiv = itemCard.createDiv({ cls: 'item-description' });
+                    descDiv.setText(item.description);
+                    // Use same color but with slight opacity for description
+                    descDiv.style.color = textColor;
+                    descDiv.style.opacity = '0.75';
+                }
+            } else {
+                // Fallback if no category
                 itemCard.createDiv({
-                    cls: 'item-description',
-                    text: item.description
+                    cls: 'item-name',
+                    text: item.name
                 });
+
+                if (item.description) {
+                    itemCard.createDiv({
+                        cls: 'item-description',
+                        text: item.description
+                    });
+                }
             }
 
             // Button container

@@ -88,7 +88,7 @@
     border-right: none;
 }
 
-/* Scheduler Item Cards */
+/* Scheduler Item Cards - IMPROVED CONTRAST */
 .scheduler-item-card {
     padding: 8px;
     border-radius: 4px;
@@ -99,13 +99,13 @@
     /* Background and border set via JavaScript */
 }
 
-/* Theme-specific adjustments */
+/* Enhanced theme-specific adjustments for better contrast */
 .theme-light .scheduler-item-card {
     background-color: rgba(255, 255, 255, 0.95);
 }
 
 .theme-dark .scheduler-item-card {
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: rgba(0, 0, 0, 0.4);
 }
 
 .scheduler-item-card:hover {
@@ -131,28 +131,29 @@
     opacity: 0.8;
 }
 
+/* Base styles for item text - let JavaScript set the color */
 .item-name {
     font-weight: 600;
     font-size: 0.9em;
     margin-bottom: 4px;
     padding-right: 20px;
-    /* Color is now set dynamically via JavaScript */
+    /* Color is set dynamically via JavaScript based on background brightness */
 }
 
 .item-description {
     font-size: 0.85em;
     white-space: pre-wrap;
     word-wrap: break-word;
-    opacity: 0.9;
-    /* Color is now set dynamically via JavaScript */
+    /* Color and opacity set dynamically via JavaScript based on background brightness */
 }
 
-/* Fallback for items without dynamic color */
-.scheduler-item-card:not([style*="color"]) .item-name,
-.scheduler-item-card:not([style*="color"]) .item-description {
+/* Fallback for items without dynamic color set by JavaScript */
+.scheduler-item-card:not([style*="background"]) .item-name,
+.scheduler-item-card:not([style*="background"]) .item-description {
     color: var(--text-normal);
 }
 
+/* Delete button - positioned absolutely */
 .item-delete-btn {
     position: absolute;
     top: 4px;
@@ -200,7 +201,7 @@
 
 .monthly-row {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 16px;
 }
 
@@ -225,6 +226,7 @@
     margin: 0;
     font-size: 1.1em;
     color: var(--text-normal);
+    flex-grow: 1;
 }
 
 .add-task-btn {
@@ -373,29 +375,6 @@
     transform: scale(1.1);
 }
 
-/* Update month header to flex layout */
-.month-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid var(--background-modifier-border);
-}
-
-.month-header h3 {
-    margin: 0;
-    font-size: 1.1em;
-    color: var(--text-normal);
-    flex-grow: 1;
-}
-
-/* Button container for + and trash */
-.month-header-buttons {
-    display: flex;
-    gap: 4px;
-}
-
 /* Make sure notifications are visible */
 .notice {
     white-space: pre-wrap;
@@ -468,13 +447,6 @@
 .time-cell.current-hour-row {
     font-weight: 700;
     color: #e74c3c;
-}
-
-/* Update monthly grid for 4 columns */
-.monthly-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
 }
 
 /* Weekly section header with clear button */
@@ -680,29 +652,11 @@
 }
 
 /* Update delete button to work with new button container */
-.item-delete-btn,
-.task-delete-btn {
+.item-buttons .item-delete-btn,
+.task-buttons .task-delete-btn {
     position: static;
     width: 20px;
     height: 20px;
-    border-radius: 50%;
-    border: none;
-    background-color: rgba(255, 0, 0, 0.7);
-    color: white;
-    cursor: pointer;
-    font-size: 16px;
-    line-height: 1;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-}
-
-.item-delete-btn:hover,
-.task-delete-btn:hover {
-    background-color: rgba(255, 0, 0, 0.9);
-    transform: scale(1.1);
 }
 
 /* Header button group */
@@ -749,52 +703,4 @@
 .edit-standard-task-modal {
     max-height: 80vh;
     overflow-y: auto;
-}
-
-/* Responsive adjustments */
-@media (max-width: 1200px) {
-    .schedule-grid {
-        font-size: 0.85em;
-    }
-    
-    .schedule-grid-cell {
-        min-height: 20px;
-    }
-}
-
-@media (max-width: 768px) {
-    .schedule-grid {
-        grid-template-columns: 50px repeat(7, 1fr);
-        font-size: 0.75em;
-    }
-    
-    .header-button-group {
-        flex-direction: column;
-    }
-}
-
-@media (max-width: 1200px) {
-    .monthly-row {
-        grid-template-columns: repeat(3, 1fr);
-    }
-
-    .weekly-grid {
-        font-size: 0.9em;
-    }
-}
-
-@media (max-width: 768px) {
-    .weekly-grid {
-        font-size: 0.85em;
-        grid-template-columns: 60px repeat(7, 1fr);
-    }
-
-    .time-indicator-label {
-        left: -60px;
-        font-size: 0.7em;
-    }
-
-    .monthly-row {
-        grid-template-columns: repeat(2, 1fr);
-    }
 }
