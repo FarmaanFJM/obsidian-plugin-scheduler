@@ -164,15 +164,32 @@
     text-decoration: line-through;
 }
 
-/* ========== TYPE: GOAL ========== */
-/* Like task but with BOTH left and right borders */
+/* Remove default left border for goal + deadline */
+.item-type-goal,
+.item-type-deadline {
+    border-left: none !important;
+}
+
+/* ========== TYPE: GOAL (Classic Gold Outline) ========== */
 .item-type-goal {
+    position: relative;
     border-radius: 4px;
-    border-left-width: 5px;
-    border-right-width: 5px;
-    border-top-width: 5px;
-    border-bottom-width: 5px;
-    border-style: solid;
+    padding: 10px 12px;
+}
+
+.item-type-goal::before {
+    content: "";
+    position: absolute;
+    inset: 0; /* full frame */
+    border-radius: 4px;
+    pointer-events: none;
+    padding: 3px; /* thin frame thickness */
+    background: linear-gradient(135deg, #FFD700, #C9A64D);
+    -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
 }
 
 .theme-light .item-type-goal {
@@ -187,24 +204,26 @@
             rgba(var(--category-color-rgb), 0.20) 100%);
 }
 
-/* ========== TYPE: DEADLINE (Dark Metallic, Right Shine) ========== */
+/* ========== TYPE: DEADLINE (Dark Red Accent Frame) ========== */
 .item-type-deadline {
-    border-radius: 20px;
-    border-left-width: 4px;
-    border-left-style: solid;
     position: relative;
-    overflow: hidden;
+    border-radius: 20px; /* keep your round deadline */
+    padding: 10px 12px;
+}
 
-    /* darker brushed metal look */
-    background: linear-gradient(120deg,
-            rgba(var(--category-color-rgb), 0.85) 0%,
-            rgba(var(--category-color-rgb), 0.55) 50%,
-            rgba(var(--category-color-rgb), 0.80) 100%);
-
-    box-shadow:
-        inset 0 0 4px rgba(255, 255, 255, 0.15),
-        inset -3px 0 8px rgba(0, 0, 0, 0.25),
-        0 2px 8px rgba(0, 0, 0, 0.35);
+.item-type-deadline::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+    pointer-events: none;
+    padding: 3px; /* thin frame thickness */
+    background: linear-gradient(135deg, #c0392b, #8e2b1a);
+    -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
 }
 
 /* Metallic highlight */
@@ -332,6 +351,16 @@
     flex-grow: 1;
 }
 
+.monthly-type-header {
+    margin: 6px 0 4px;
+    font-size: 0.75em;
+    text-align: center;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.85;
+}
+
 .add-task-btn {
     width: 28px;
     height: 28px;
@@ -365,6 +394,68 @@
     position: relative;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s;
+}
+
+.task-card.item-type-goal,
+.task-card.item-type-deadline {
+    border-left: none !important;
+}
+
+.task-card.item-type-deadline {
+    position: relative;
+    border-radius: 20px !important;
+    padding: 10px 12px;
+    overflow: hidden;
+}
+
+.task-card.item-type-deadline::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+    pointer-events: none;
+    padding: 3px;
+    background: linear-gradient(135deg, #c0392b, #8e2b1a);
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+}
+
+.task-card.item-type-deadline::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 45%;
+    height: 100%;
+    background: linear-gradient(to bottom left,
+            rgba(255, 255, 255, 0.18),
+            rgba(255, 255, 255, 0.05) 40%,
+            rgba(255, 255, 255, 0.0));
+    pointer-events: none;
+}
+
+.task-card.item-type-goal {
+    position: relative;
+    border-radius: 4px;
+    padding: 10px 12px;
+}
+
+.task-card.item-type-goal::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 4px;
+    pointer-events: none;
+    padding: 3px;
+    background: linear-gradient(135deg, #FFD700, #C9A64D);
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
 }
 
 .task-name {

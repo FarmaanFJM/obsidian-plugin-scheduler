@@ -103,7 +103,7 @@ export class SchedulerView extends ItemView {
         // Refresh button
         const refreshBtn = buttonGroup.createEl('button', {
             cls: 'refresh-btn',
-            text: '🔄 Refresh'
+            text: 'Refresh'
         });
         refreshBtn.addEventListener('click', () => {
             this.refresh();
@@ -113,7 +113,7 @@ export class SchedulerView extends ItemView {
         // Populate Tasks button (NEW - moved here)
         const populateBtn = buttonGroup.createEl('button', {
             cls: 'populate-btn',
-            text: '📋 Populate Tasks'
+            text: 'Insert Standard Tasks'
         });
         populateBtn.addEventListener('click', () => {
             this.plugin.populateStandardTasks();
@@ -122,7 +122,7 @@ export class SchedulerView extends ItemView {
         // Clear Non-Standard button (RENAMED)
         const clearNonStandardBtn = buttonGroup.createEl('button', {
             cls: 'clear-weekly-btn',
-            text: '🗑️ Clear Non-Standard'
+            text: '🗑️ Clear Non-Standard Tasks'
         });
         clearNonStandardBtn.addEventListener('click', () => {
             const confirmed = confirm('Clear all non-standard tasks for current week?');
@@ -403,104 +403,154 @@ export class SchedulerView extends ItemView {
         });
 
         const tasksList = monthCol.createDiv({ cls: 'tasks-list' });
-        const tasks = this.plugin.getMonthlyTasks(monthIndex);
+        const allTasks = this.plugin.getMonthlyTasks(monthIndex);
 
-        tasks.forEach(task => {
-            const category = this.plugin.getCategoryById(task.categoryId);
-            const taskCard = tasksList.createDiv({ cls: 'task-card' });
+        // ---- Group tasks by type ----
+        const groups: Record<'deadline' | 'goal' | 'task' | 'regular', SchedulerItem[]> = {
+            deadline: [],
+            goal: [],
+            task: [],
+            regular: [],
+        };
 
-            // Add type-specific class
-            taskCard.addClass(`item-type-${task.itemType || 'regular'}`);
+        for (const t of allTasks) {
+            switch (t.itemType) {
+                case 'deadline':
+                    groups.deadline.push(t);
+                    break;
+                case 'goal':
+                    groups.goal.push(t);
+                    break;
+                case 'task':
+                    groups.task.push(t);
+                    break;
+                default:
+                    groups.regular.push(t);
+            }
+        }
 
-            // Add completed class for tasks
-            if (task.itemType === 'task' && task.completed) {
-                taskCard.addClass('item-completed');
+        const order: { key: keyof typeof groups; label: string }[] = [
+            { key: 'deadline', label: 'Deadlines' },
+            { key: 'goal', label: 'Goals' },
+            { key: 'task', label: 'Tasks' },
+            { key: 'regular', label: 'Regular' },
+        ];
+
+        for (const { key, label } of order) {
+            const items = groups[key];
+            if (!items.length) continue;
+
+            // Section header like "-------- Deadlines --------"
+            const header = tasksList.createDiv({ cls: 'monthly-type-header' });
+            header.setText(`──────── ${label} ────────`);
+
+            items.forEach(task => {
+                this.renderMonthlyTaskCard(tasksList, task);
+            });
+        }
+    }
+
+    /**
+ * Renders a single task in the Monthly column, with full type-based styling.
+ */
+    private renderMonthlyTaskCard(tasksList: HTMLElement, task: SchedulerItem) {
+        const category = this.plugin.getCategoryById(task.categoryId);
+        const taskCard = tasksList.createDiv({ cls: 'task-card' });
+
+        // Add type-specific class
+        taskCard.addClass(`item-type-${task.itemType || 'regular'}`);
+
+        // Add completed class for tasks
+        if (task.itemType === 'task' && task.completed) {
+            taskCard.addClass('item-completed');
+        }
+
+        if (category) {
+            const baseColor = category.color;
+            const rgb = this.hexToRgb(baseColor);
+
+            // Left border color
+            taskCard.style.borderLeftColor = baseColor;
+
+            // Always expose category color via CSS variable
+            taskCard.style.setProperty(
+                '--category-color-rgb',
+                `${rgb.r}, ${rgb.g}, ${rgb.b}`
+            );
+
+            // For goal, also set full border
+            if (task.itemType === 'goal') {
+                taskCard.style.borderRightColor = baseColor;
+                taskCard.style.borderTopColor = baseColor;
+                taskCard.style.borderBottomColor = baseColor;
             }
 
-            if (category) {
-                const baseColor = category.color;
-                const rgb = this.hexToRgb(baseColor);
+            // For regular and deadline we still give a solid base background
+            if (task.itemType === 'regular' || task.itemType === 'deadline') {
+                taskCard.style.backgroundColor = baseColor;
+            }
 
-                // Set border colors
-                taskCard.style.borderLeftColor = baseColor;
-
-                // For goal, also set right border
-                if (task.itemType === 'goal') {
-                    taskCard.style.borderRightColor = baseColor;
-                    taskCard.style.borderTopColor = baseColor;
-                    taskCard.style.borderBottomColor = baseColor;
-                }
-
-                // For task and goal: use RGB variable for gradient backgrounds
-                if (task.itemType === 'task' || task.itemType === 'goal') {
-                    taskCard.style.setProperty('--category-color-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
-                }
-
-                // For regular and deadline: apply full color directly
-                if (task.itemType === 'regular' || task.itemType === 'deadline') {
-                    taskCard.style.backgroundColor = baseColor;
-                }
-
-                // Calculate contrast color for text
-                let textColor;
-
-                if (task.itemType === "task" || task.itemType === "goal") {
-                    textColor = "#1a1a1a";  // dark text for light backgrounds
-                } else {
-                    textColor = this.getContrastColor(baseColor);
-                }
-
-                const nameDiv = taskCard.createDiv({ cls: 'task-name' });
-                nameDiv.setText(task.name);
-                nameDiv.style.color = textColor;
-
-                if (task.description) {
-                    const descDiv = taskCard.createDiv({ cls: 'task-description' });
-                    descDiv.setText(task.description);
-                    descDiv.style.color = textColor;
-                    descDiv.style.opacity = '0.75';
-                }
+            // Text color: dark for light backgrounds (task/goal), contrast for others
+            let textColor: string;
+            if (task.itemType === 'task' || task.itemType === 'goal') {
+                textColor = '#1a1a1a';
             } else {
-                taskCard.createDiv({ cls: 'task-name', text: task.name });
-
-                if (task.description) {
-                    taskCard.createDiv({ cls: 'task-description', text: task.description });
-                }
+                textColor = this.getContrastColor(baseColor);
             }
 
-            // Button container
-            const btnContainer = taskCard.createDiv({ cls: 'task-buttons' });
+            const nameDiv = taskCard.createDiv({ cls: 'task-name' });
+            nameDiv.setText(task.name);
+            nameDiv.style.color = textColor;
 
-            // Checkbox for tasks
-            if (task.itemType === 'task') {
-                const checkBtn = btnContainer.createEl('button', {
-                    cls: 'task-check-btn',
-                    text: task.completed ? '☑' : '☐'
-                });
-                checkBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    this.plugin.updateItem(task.id, { completed: !task.completed });
+            if (task.description) {
+                const descDiv = taskCard.createDiv({ cls: 'task-description' });
+                descDiv.setText(task.description);
+                descDiv.style.color = textColor;
+                descDiv.style.opacity = '0.75';
+            }
+        } else {
+            taskCard.createDiv({ cls: 'task-name', text: task.name });
+
+            if (task.description) {
+                taskCard.createDiv({
+                    cls: 'task-description',
+                    text: task.description
                 });
             }
+        }
 
-            // Edit button
-            const editBtn = btnContainer.createEl('button', {
-                cls: 'task-edit-btn',
-                text: '✎'
-            });
-            editBtn.addEventListener('click', () => {
-                this.openEditMonthlyTaskModal(task);
-            });
+        // Button container
+        const btnContainer = taskCard.createDiv({ cls: 'task-buttons' });
 
-            // Delete button
-            const deleteBtn = btnContainer.createEl('button', {
-                cls: 'task-delete-btn',
-                text: '×'
+        // Checkbox for tasks
+        if (task.itemType === 'task') {
+            const checkBtn = btnContainer.createEl('button', {
+                cls: 'task-check-btn',
+                text: task.completed ? '☑' : '☐'
             });
-            deleteBtn.addEventListener('click', () => {
-                this.plugin.removeItem(task.id);
-                this.refresh();
+            checkBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.plugin.updateItem(task.id, { completed: !task.completed });
             });
+        }
+
+        // Edit button
+        const editBtn = btnContainer.createEl('button', {
+            cls: 'task-edit-btn',
+            text: '✎'
+        });
+        editBtn.addEventListener('click', () => {
+            this.openEditMonthlyTaskModal(task);
+        });
+
+        // Delete button
+        const deleteBtn = btnContainer.createEl('button', {
+            cls: 'task-delete-btn',
+            text: '×'
+        });
+        deleteBtn.addEventListener('click', () => {
+            this.plugin.removeItem(task.id);
+            this.refresh();
         });
     }
 
