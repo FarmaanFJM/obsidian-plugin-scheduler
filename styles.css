@@ -3,12 +3,13 @@
     padding: 20px;
     height: 100%;
     background-color: var(--background-primary);
-    overflow: auto;              /* ⬅ horizontal + vertical scroll here */
+    overflow: auto;
+    /* ⬅ horizontal + vertical scroll here */
 }
 
 /* Force a “desktop” width that never shrinks */
 .scheduler-main {
-    min-width: 1400px;           
+    min-width: 1400px;
 }
 
 /* Weekly Scheduler Section */
@@ -203,16 +204,18 @@
 .item-type-goal::before {
     content: "";
     position: absolute;
-    inset: 0; /* full frame */
+    inset: 0;
+    /* full frame */
     border-radius: 4px;
     pointer-events: none;
-    padding: 3px; /* thin frame thickness */
+    padding: 3px;
+    /* thin frame thickness */
     background: linear-gradient(135deg, #FFD700, #C9A64D);
-    -webkit-mask: 
-        linear-gradient(#fff 0 0) content-box, 
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
         linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
-            mask-composite: exclude;
+    mask-composite: exclude;
 }
 
 .theme-light .item-type-goal {
@@ -230,7 +233,8 @@
 /* ========== TYPE: DEADLINE (Dark Red Accent Frame) ========== */
 .item-type-deadline {
     position: relative;
-    border-radius: 20px; /* keep your round deadline */
+    border-radius: 20px;
+    /* keep your round deadline */
     padding: 10px 12px;
 }
 
@@ -240,13 +244,14 @@
     inset: 0;
     border-radius: 20px;
     pointer-events: none;
-    padding: 3px; /* thin frame thickness */
+    padding: 3px;
+    /* thin frame thickness */
     background: linear-gradient(135deg, #c0392b, #8e2b1a);
-    -webkit-mask: 
-        linear-gradient(#fff 0 0) content-box, 
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
         linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
-            mask-composite: exclude;
+    mask-composite: exclude;
 }
 
 /* Metallic highlight */
@@ -449,7 +454,7 @@
         linear-gradient(#fff 0 0) content-box,
         linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
-            mask-composite: exclude;
+    mask-composite: exclude;
 }
 
 .task-card.item-type-deadline::after {
@@ -484,7 +489,7 @@
         linear-gradient(#fff 0 0) content-box,
         linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
-            mask-composite: exclude;
+    mask-composite: exclude;
 }
 
 .task-name {
@@ -1058,4 +1063,47 @@
 .theme-dark .task-card.item-type-task .task-name,
 .theme-dark .task-card.item-type-task .task-description {
     color: #ffffff !important;
+}
+
+/* ===== MOBILE FIX: buttons below text, always visible ===== */
+@media (max-width: 1200px) {
+
+    /* normal padding again, no reserve space on the right */
+    .scheduler-item-card,
+    .task-card {
+        padding-right: 12px;
+    }
+
+    /* buttons are part of the layout, below the text */
+    .item-buttons,
+    .task-buttons {
+        position: static;          /* no absolute positioning */
+        top: auto;
+        right: auto;
+        margin-top: 6px;
+        align-self: flex-end;
+
+        display: flex;
+        gap: 8px;
+        opacity: 1 !important;     /* always visible */
+        pointer-events: auto;
+    }
+
+    .item-check-btn,
+    .task-check-btn,
+    .item-edit-btn,
+    .task-edit-btn,
+    .item-delete-btn,
+    .task-delete-btn {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 16px !important;
+        border-radius: 6px !important;
+    }
+
+    /* specifically ensure delete is visible */
+    .item-delete-btn,
+    .task-delete-btn {
+        opacity: 1 !important;
+    }
 }
