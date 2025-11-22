@@ -69,10 +69,10 @@ export class AddItemModal extends Modal {
             .setName('Type')
             .setDesc('Item type affects visual appearance')
             .addDropdown(dropdown => {
-                dropdown.addOption('regular', '⚪ Regular');
-                dropdown.addOption('task', '✓ Task');
-                dropdown.addOption('goal', '🎯 Goal');
-                dropdown.addOption('deadline', '⏰ Deadline');
+                dropdown.addOption('regular', 'Regular');
+                dropdown.addOption('task', 'Task (with checkbox)');
+                dropdown.addOption('goal', 'Goal');
+                dropdown.addOption('deadline', 'Deadline (urgent)');
                 dropdown.setValue(this.selectedItemType)
                     .onChange(value => {
                         this.selectedItemType = value as ItemType;

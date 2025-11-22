@@ -52,7 +52,7 @@ export class SchedulerView extends ItemView {
 
     renderWeeklyHeader(container: Element) {
         const weeklyHeader = container.createDiv({ cls: 'scheduler-section-header' });
-        
+
         const titleContainer = weeklyHeader.createDiv({ cls: 'header-title-container' });
         titleContainer.createEl('h2', { text: 'Weekly Schedule' });
 
@@ -60,9 +60,9 @@ export class SchedulerView extends ItemView {
         const startDate = DateUtils.getDateOfWeek(this.plugin.currentWeek, this.plugin.currentYear);
         const endDate = DateUtils.getSunday(startDate);
         const weekRangeString = DateUtils.getWeekRangeString(startDate, endDate);
-        
+
         const weekNavContainer = titleContainer.createDiv({ cls: 'week-navigation' });
-        
+
         const prevWeekBtn = weekNavContainer.createEl('button', {
             cls: 'nav-btn',
             text: '◀'
@@ -146,12 +146,12 @@ export class SchedulerView extends ItemView {
 
     renderMonthlyHeader(container: Element) {
         const monthlyHeader = container.createDiv({ cls: 'scheduler-section-header' });
-        
+
         const titleContainer = monthlyHeader.createDiv({ cls: 'header-title-container' });
-        titleContainer.createEl('h2', { text: 'Monthly Goals' });
+        titleContainer.createEl('h2', { text: 'Monthly Schedule' });
 
         const yearNavContainer = titleContainer.createDiv({ cls: 'year-navigation' });
-        
+
         const prevYearBtn = yearNavContainer.createEl('button', {
             cls: 'nav-btn',
             text: '◀'
@@ -197,7 +197,7 @@ export class SchedulerView extends ItemView {
 
         const today = new Date();
         const currentDay = (today.getDay() + 6) % 7;
-        
+
         // Check if we're viewing the current week
         const { weekNumber, year } = DateUtils.getCurrentWeekInfo();
         const isCurrentWeek = (this.plugin.currentWeek === weekNumber && this.plugin.currentYear === year);
@@ -252,44 +252,53 @@ export class SchedulerView extends ItemView {
         items.forEach(item => {
             const category = this.plugin.getCategoryById(item.categoryId);
             const itemCard = cell.createDiv({ cls: 'scheduler-item-card' });
-            
+
             // Add type-specific class
             itemCard.addClass(`item-type-${item.itemType || 'regular'}`);
-            
+
             // Add completed class for tasks
             if (item.itemType === 'task' && item.completed) {
                 itemCard.addClass('item-completed');
             }
 
             if (category) {
-                itemCard.style.backgroundColor = category.color;
-                itemCard.style.borderLeft = `4px solid ${category.color}`;
+                const baseColor = category.color;
+                const rgb = this.hexToRgb(baseColor);
 
-                // Calculate contrast color for text
-                const textColor = this.getContrastColor(category.color);
+                // Set border colors
+                itemCard.style.borderLeftColor = baseColor;
 
-                // Content container
-                const contentDiv = itemCard.createDiv({ cls: 'item-content' });
-
-                // Type icon
-                const iconSpan = contentDiv.createSpan({ cls: 'item-type-icon' });
-                iconSpan.style.color = textColor;
-                switch (item.itemType) {
-                    case 'task':
-                        iconSpan.setText('✓');
-                        break;
-                    case 'goal':
-                        iconSpan.setText('🎯');
-                        break;
-                    case 'deadline':
-                        iconSpan.setText('⏰');
-                        break;
-                    default:
-                        iconSpan.setText('⚪');
+                // For goal and deadline, also set right border
+                if (item.itemType === 'goal') {
+                    itemCard.style.borderRightColor = baseColor;
+                    itemCard.style.borderTopColor = baseColor;
+                    itemCard.style.borderBottomColor = baseColor;
                 }
 
-                // Create name element and set color
-                const nameDiv = contentDiv.createDiv({ cls: 'item-name' });
+                // For task and goal: use RGB variable for gradient backgrounds
+                if (item.itemType === 'task' || item.itemType === 'goal') {
+                    itemCard.style.setProperty('--category-color-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+                }
+
+                // For regular and deadline: apply full color directly
+                if (item.itemType === 'regular' || item.itemType === 'deadline') {
+                    itemCard.style.backgroundColor = baseColor;
+                }
+
+                // Calculate contrast color for text
+                let textColor;
+
+                // TASK + GOAL → light background → use dark text
+                if (item.itemType === "task" || item.itemType === "goal") {
+                    textColor = "#1a1a1a";
+                }
+                // REGULAR + DEADLINE → full-color background → use proper contrast
+                else {
+                    textColor = this.getContrastColor(baseColor);
+                }
+
+                // Create name element
+                const nameDiv = itemCard.createDiv({ cls: 'item-name' });
                 nameDiv.setText(item.name);
                 nameDiv.style.color = textColor;
 
@@ -302,17 +311,7 @@ export class SchedulerView extends ItemView {
                 }
             } else {
                 // Fallback if no category
-                const contentDiv = itemCard.createDiv({ cls: 'item-content' });
-                
-                const iconSpan = contentDiv.createSpan({ cls: 'item-type-icon' });
-                switch (item.itemType) {
-                    case 'task': iconSpan.setText('✓'); break;
-                    case 'goal': iconSpan.setText('🎯'); break;
-                    case 'deadline': iconSpan.setText('⏰'); break;
-                    default: iconSpan.setText('⚪');
-                }
-
-                contentDiv.createDiv({ cls: 'item-name', text: item.name });
+                itemCard.createDiv({ cls: 'item-name', text: item.name });
 
                 if (item.description) {
                     itemCard.createDiv({
@@ -409,43 +408,49 @@ export class SchedulerView extends ItemView {
         tasks.forEach(task => {
             const category = this.plugin.getCategoryById(task.categoryId);
             const taskCard = tasksList.createDiv({ cls: 'task-card' });
-            
+
             // Add type-specific class
             taskCard.addClass(`item-type-${task.itemType || 'regular'}`);
-            
+
             // Add completed class for tasks
             if (task.itemType === 'task' && task.completed) {
                 taskCard.addClass('item-completed');
             }
 
             if (category) {
-                taskCard.style.backgroundColor = category.color;
-                taskCard.style.borderLeft = `4px solid ${category.color}`;
-                
-                // Calculate contrast color for text
-                const textColor = this.getContrastColor(category.color);
+                const baseColor = category.color;
+                const rgb = this.hexToRgb(baseColor);
 
-                // Content container
-                const contentDiv = taskCard.createDiv({ cls: 'item-content' });
+                // Set border colors
+                taskCard.style.borderLeftColor = baseColor;
 
-                // Type icon
-                const iconSpan = contentDiv.createSpan({ cls: 'item-type-icon' });
-                iconSpan.style.color = textColor;
-                switch (task.itemType) {
-                    case 'task':
-                        iconSpan.setText('✓');
-                        break;
-                    case 'goal':
-                        iconSpan.setText('🎯');
-                        break;
-                    case 'deadline':
-                        iconSpan.setText('⏰');
-                        break;
-                    default:
-                        iconSpan.setText('⚪');
+                // For goal, also set right border
+                if (task.itemType === 'goal') {
+                    taskCard.style.borderRightColor = baseColor;
+                    taskCard.style.borderTopColor = baseColor;
+                    taskCard.style.borderBottomColor = baseColor;
                 }
 
-                const nameDiv = contentDiv.createDiv({ cls: 'task-name' });
+                // For task and goal: use RGB variable for gradient backgrounds
+                if (task.itemType === 'task' || task.itemType === 'goal') {
+                    taskCard.style.setProperty('--category-color-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+                }
+
+                // For regular and deadline: apply full color directly
+                if (task.itemType === 'regular' || task.itemType === 'deadline') {
+                    taskCard.style.backgroundColor = baseColor;
+                }
+
+                // Calculate contrast color for text
+                let textColor;
+
+                if (task.itemType === "task" || task.itemType === "goal") {
+                    textColor = "#1a1a1a";  // dark text for light backgrounds
+                } else {
+                    textColor = this.getContrastColor(baseColor);
+                }
+
+                const nameDiv = taskCard.createDiv({ cls: 'task-name' });
                 nameDiv.setText(task.name);
                 nameDiv.style.color = textColor;
 
@@ -456,17 +461,7 @@ export class SchedulerView extends ItemView {
                     descDiv.style.opacity = '0.75';
                 }
             } else {
-                const contentDiv = taskCard.createDiv({ cls: 'item-content' });
-                
-                const iconSpan = contentDiv.createSpan({ cls: 'item-type-icon' });
-                switch (task.itemType) {
-                    case 'task': iconSpan.setText('✓'); break;
-                    case 'goal': iconSpan.setText('🎯'); break;
-                    case 'deadline': iconSpan.setText('⏰'); break;
-                    default: iconSpan.setText('⚪');
-                }
-
-                contentDiv.createDiv({ cls: 'task-name', text: task.name });
+                taskCard.createDiv({ cls: 'task-name', text: task.name });
 
                 if (task.description) {
                     taskCard.createDiv({ cls: 'task-description', text: task.description });
@@ -571,6 +566,15 @@ export class SchedulerView extends ItemView {
         return luminance > 0.5 ? '#1a1a1a' : '#ffffff';
     }
 
+    hexToRgb(hex: string): { r: number; g: number; b: number } {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : { r: 0, g: 0, b: 0 };
+    }
+
     startTimeUpdates() {
         if (this.timeUpdateInterval !== null) {
             window.clearInterval(this.timeUpdateInterval);
@@ -586,11 +590,16 @@ export class SchedulerView extends ItemView {
     }
 
     updateTimeIndicator() {
-        const oldHighlights = this.containerEl.querySelectorAll('.current-hour-row');
-        oldHighlights.forEach(el => el.classList.remove('current-hour-row'));
+        // Remove old highlights
+        const oldHighlights = this.containerEl.querySelectorAll('.current-hour-cell');
+        oldHighlights.forEach(el => el.classList.remove('current-hour-cell'));
+
+        const oldTimeLabels = this.containerEl.querySelectorAll('.current-hour-label');
+        oldTimeLabels.forEach(el => el.classList.remove('current-hour-label'));
 
         const now = new Date();
         const currentHour = now.getHours();
+        const currentDay = (now.getDay() + 6) % 7; // Monday = 0
 
         const startHour = this.plugin.settings.sleepSchedule.enabled
             ? this.plugin.settings.sleepSchedule.wakeTime
@@ -604,21 +613,27 @@ export class SchedulerView extends ItemView {
         // Only highlight if viewing current week
         const { weekNumber, year } = DateUtils.getCurrentWeekInfo();
         const isCurrentWeek = (this.plugin.currentWeek === weekNumber && this.plugin.currentYear === year);
-        
+
         if (!isCurrentWeek) return;
 
+        // Highlight ONLY the current day's current hour cell
         const allCells = this.containerEl.querySelectorAll('.day-cell');
         allCells.forEach((cell: HTMLElement) => {
             const cellHour = parseInt(cell.dataset.hour || '-1');
-            if (cellHour === currentHour) {
-                cell.classList.add('current-hour-row');
+            const cellDay = parseInt(cell.dataset.day || '-1');
+
+            // Only highlight if it's the current hour AND current day
+            if (cellHour === currentHour && cellDay === currentDay) {
+                cell.classList.add('current-hour-cell');
             }
         });
 
+        // Highlight the time label
         const timeCells = this.containerEl.querySelectorAll('.time-cell');
         const rowIndex = currentHour - startHour;
         if (rowIndex >= 0 && rowIndex < timeCells.length) {
-            timeCells[rowIndex].classList.add('current-hour-row');
+            timeCells[rowIndex].classList.add('current-hour-label');
+            timeCells[rowIndex].classList.add('current-hour-cell');
         }
     }
 
