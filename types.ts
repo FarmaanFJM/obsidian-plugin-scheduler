@@ -48,6 +48,8 @@ export interface SchedulerItem {
     completed?: boolean; // For 'task' type items
     isStandard?: boolean;
     standardTaskName?: string; // Link back to standard task for updates
+    deadlineDate?: string;  // ISO date "YYYY-MM-DD"
+    deadlineHour?: number;  // 0–23
 }
 
 export interface StandardItemConfig {

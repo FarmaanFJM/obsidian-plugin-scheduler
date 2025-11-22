@@ -277,6 +277,23 @@ export default class SchedulerPlugin extends Plugin {
             id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
         };
 
+        // If we add a DEADLINE from the weekly grid:
+        // attach date/hour and also store it in the correct month.
+        if (newItem.itemType === 'deadline' && this.currentYearData) {
+            const monday = DateUtils.getDateOfWeek(this.currentWeek, this.currentYear);
+            const date = new Date(monday);
+            date.setDate(monday.getDate() + day); // day: 0–6 → Mon–Sun
+
+            newItem.deadlineDate = DateUtils.toISODateString(date);
+            newItem.deadlineHour = hour;
+
+            const monthIdx = date.getMonth();
+            if (!this.currentYearData.monthlyTasks[monthIdx]) {
+                this.currentYearData.monthlyTasks[monthIdx] = [];
+            }
+            this.currentYearData.monthlyTasks[monthIdx].push(newItem);
+        }
+
         if (!weekData.schedule[day]) {
             weekData.schedule[day] = {};
         }
@@ -301,8 +318,60 @@ export default class SchedulerPlugin extends Plugin {
         }
 
         this.currentYearData.monthlyTasks[month].push(newItem);
+
+        // If this is a deadline and we know its date/hour, mirror it into the weekly schedule
+        if (newItem.itemType === 'deadline') {
+            this.syncDeadlineIntoWeekly(newItem);
+        }
+
         this.saveYearData();
     }
+
+    private syncDeadlineIntoWeekly(item: SchedulerItem) {
+        if (!this.currentYearData || !item.deadlineDate || item.deadlineHour == null) {
+            return;
+        }
+
+        const date = DateUtils.fromISODateString(item.deadlineDate);
+        const weekNumber = DateUtils.getWeekNumber(date);
+        const weekYear = DateUtils.getYearForWeek(weekNumber, date);
+
+        // Only handle deadlines that belong to this year data
+        if (weekYear !== this.currentYearData.year) {
+            return;
+        }
+
+        // Find or create the corresponding week
+        let weekData = this.currentYearData.weeks.find(w => w.weekNumber === weekNumber);
+        if (!weekData) {
+            const startDate = DateUtils.getMonday(date);
+            const endDate = DateUtils.getSunday(date);
+            weekData = {
+                weekNumber,
+                startDate: DateUtils.toISODateString(startDate),
+                endDate: DateUtils.toISODateString(endDate),
+                schedule: this.createEmptyWeeklySchedule()
+            };
+            this.currentYearData.weeks.push(weekData);
+        }
+
+        const dayOfWeek = (date.getDay() + 6) % 7; // Monday = 0
+        const hour = item.deadlineHour;
+
+        if (!weekData.schedule[dayOfWeek]) {
+            weekData.schedule[dayOfWeek] = {};
+        }
+        if (!weekData.schedule[dayOfWeek][hour]) {
+            weekData.schedule[dayOfWeek][hour] = [];
+        }
+
+        // Avoid duplicates by id
+        const already = weekData.schedule[dayOfWeek][hour].some(i => i.id === item.id);
+        if (!already) {
+            weekData.schedule[dayOfWeek][hour].push(item);
+        }
+    }
+
 
     updateItem(itemId: string, updates: Partial<SchedulerItem>) {
         const weekData = this.getCurrentWeekData();

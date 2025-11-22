@@ -512,7 +512,7 @@ export class SchedulerView extends ItemView {
             this.app,
             this.plugin.settings.categories,
             title,
-            (item) => {
+            (item: Omit<SchedulerItem, 'id'>) => {
                 this.plugin.addItemToSchedule(day, hour, item);
                 this.refresh();
             }
@@ -525,7 +525,7 @@ export class SchedulerView extends ItemView {
             this.app,
             this.plugin.settings.categories,
             item,
-            (updates) => {
+            (updates: Partial<SchedulerItem>) => {
                 this.plugin.updateItem(item.id, updates);
             }
         );
@@ -537,20 +537,25 @@ export class SchedulerView extends ItemView {
             this.app,
             this.plugin.settings.categories,
             `Task for ${monthName}`,
-            (item) => {
+            (item: Omit<SchedulerItem, 'id'>) => {
                 this.plugin.addMonthlyTask(month, item);
                 this.refresh();
+            },
+            {
+                monthIndex: month,
+                year: this.plugin.currentYear    // <-- NEW
             }
         );
         modal.open();
     }
+
 
     openEditMonthlyTaskModal(task: SchedulerItem) {
         const modal = new EditItemModal(
             this.app,
             this.plugin.settings.categories,
             task,
-            (updates) => {
+            (updates: Partial<SchedulerItem>) => {
                 this.plugin.updateItem(task.id, updates);
             }
         );

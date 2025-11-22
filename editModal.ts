@@ -7,9 +7,15 @@ export class EditItemModal extends Modal {
     private description: string;
     private selectedCategoryId: string;
     private selectedItemType: ItemType;
-    
+
     private categories: CategoryConfig[];
     private onSubmit: (updates: Partial<SchedulerItem>) => void;
+
+    // Deadline editing
+    private deadlineDate: string | null;
+    private deadlineHour: number | null;
+    private deadlineDateSettingEl?: HTMLElement;
+    private deadlineHourSettingEl?: HTMLElement;
 
     constructor(
         app: App,
@@ -21,12 +27,31 @@ export class EditItemModal extends Modal {
         this.item = item;
         this.categories = categories;
         this.onSubmit = onSubmit;
-        
+
         // Initialize with current values
         this.name = item.name;
         this.description = item.description;
         this.selectedCategoryId = item.categoryId;
         this.selectedItemType = item.itemType || 'regular';
+
+        // Initialize deadline values (if present)
+        this.deadlineDate = item.deadlineDate ?? null;
+        this.deadlineHour =
+            typeof item.deadlineHour === 'number' ? item.deadlineHour : null;
+
+        // Provide sensible defaults if converting to deadline later
+        if (!this.deadlineDate) {
+            const now = new Date();
+            this.deadlineDate =
+                now.getFullYear() +
+                '-' +
+                String(now.getMonth() + 1).padStart(2, '0') +
+                '-' +
+                String(now.getDate()).padStart(2, '0');
+        }
+        if (this.deadlineHour === null) {
+            this.deadlineHour = 9;
+        }
     }
 
     onOpen() {
@@ -35,11 +60,11 @@ export class EditItemModal extends Modal {
         contentEl.addClass('scheduler-modal');
 
         contentEl.createEl('h2', { text: 'Edit Item' });
-        
+
         // Show if standard task
         if (this.item.isStandard) {
             const warning = contentEl.createDiv({ cls: 'standard-task-warning' });
-            warning.createEl('p', { 
+            warning.createEl('p', {
                 text: '⚠️ This is a standard/recurring task. Changes here only affect this instance.',
             });
         }
@@ -48,12 +73,14 @@ export class EditItemModal extends Modal {
         new Setting(contentEl)
             .setName('Name')
             .setDesc('Item name (required)')
-            .addText(text => text
-                .setPlaceholder('e.g., Gym, Study, Meeting')
-                .setValue(this.name)
-                .onChange(value => {
-                    this.name = value;
-                }));
+            .addText(text =>
+                text
+                    .setPlaceholder('e.g., Gym, Study, Meeting')
+                    .setValue(this.name)
+                    .onChange(value => {
+                        this.name = value;
+                    }),
+            );
 
         // Description input
         new Setting(contentEl)
@@ -78,9 +105,11 @@ export class EditItemModal extends Modal {
                 dropdown.addOption('task', 'Task (with checkbox)');
                 dropdown.addOption('goal', 'Goal');
                 dropdown.addOption('deadline', 'Deadline (urgent)');
-                dropdown.setValue(this.selectedItemType)
+                dropdown
+                    .setValue(this.selectedItemType)
                     .onChange(value => {
                         this.selectedItemType = value as ItemType;
+                        this.updateDeadlineFieldsVisibility();
                     });
             });
 
@@ -92,27 +121,74 @@ export class EditItemModal extends Modal {
                 this.categories.forEach(cat => {
                     dropdown.addOption(cat.id, cat.name);
                 });
-                dropdown.setValue(this.selectedCategoryId)
+                dropdown
+                    .setValue(this.selectedCategoryId)
                     .onChange(value => {
                         this.selectedCategoryId = value;
                     });
             });
 
+        // --- Deadline controls (shown only when type = deadline) ---
+        const dateSetting = new Setting(contentEl)
+            .setName('Deadline date')
+            .setDesc('Format: YYYY-MM-DD')
+            .addText(text => {
+                text.setPlaceholder('YYYY-MM-DD')
+                    .setValue(this.deadlineDate ?? '')
+                    .onChange(value => {
+                        this.deadlineDate = value.trim() || null;
+                    });
+            });
+        this.deadlineDateSettingEl = dateSetting.settingEl;
+
+        const hourSetting = new Setting(contentEl)
+            .setName('Deadline hour')
+            .setDesc('Hour of the day (0–23)')
+            .addDropdown(dropdown => {
+                for (let h = 0; h < 24; h++) {
+                    const label = h.toString().padStart(2, '0') + ':00';
+                    dropdown.addOption(h.toString(), label);
+                }
+                dropdown
+                    .setValue(
+                        (this.deadlineHour ?? 9).toString(),
+                    )
+                    .onChange(value => {
+                        this.deadlineHour = parseInt(value, 10);
+                    });
+            });
+        this.deadlineHourSettingEl = hourSetting.settingEl;
+
+        // Set initial visibility
+        this.updateDeadlineFieldsVisibility();
+
         // Buttons
         const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
-        
+
         const cancelBtn = buttonContainer.createEl('button', { text: 'Cancel' });
         cancelBtn.addEventListener('click', () => {
             this.close();
         });
 
-        const saveBtn = buttonContainer.createEl('button', { 
+        const saveBtn = buttonContainer.createEl('button', {
             text: 'Save Changes',
-            cls: 'mod-cta'
+            cls: 'mod-cta',
         });
         saveBtn.addEventListener('click', () => {
             this.handleSubmit();
         });
+    }
+
+    private updateDeadlineFieldsVisibility() {
+        const show = this.selectedItemType === 'deadline';
+        const display = show ? '' : 'none';
+
+        if (this.deadlineDateSettingEl) {
+            this.deadlineDateSettingEl.style.display = display;
+        }
+        if (this.deadlineHourSettingEl) {
+            this.deadlineHourSettingEl.style.display = display;
+        }
     }
 
     private handleSubmit() {
@@ -125,8 +201,19 @@ export class EditItemModal extends Modal {
             name: this.name.trim(),
             description: this.description.trim(),
             categoryId: this.selectedCategoryId,
-            itemType: this.selectedItemType
+            itemType: this.selectedItemType,
         };
+
+        if (this.selectedItemType === 'deadline') {
+            // keep / update deadline data
+            updates.deadlineDate = this.deadlineDate ?? undefined;
+            updates.deadlineHour =
+                this.deadlineHour !== null ? this.deadlineHour : undefined;
+        } else {
+            // changing away from deadline → remove metadata
+            updates.deadlineDate = undefined;
+            updates.deadlineHour = undefined;
+        }
 
         this.onSubmit(updates);
         this.close();
