@@ -374,28 +374,71 @@ export default class SchedulerPlugin extends Plugin {
 
 
     updateItem(itemId: string, updates: Partial<SchedulerItem>) {
-        const weekData = this.getCurrentWeekData();
-        if (!weekData) return;
+        if (!this.currentYearData) return;
 
-        // Update in weekly schedule
-        for (const day in weekData.schedule) {
-            for (const hour in weekData.schedule[day]) {
-                const items = weekData.schedule[day][hour];
-                const index = items.findIndex(item => item.id === itemId);
-                if (index !== -1) {
-                    items[index] = { ...items[index], ...updates };
+        // 1) Update in ALL weekly schedules for this year
+        for (const weekData of this.currentYearData.weeks) {
+            for (const day in weekData.schedule) {
+                for (const hour in weekData.schedule[day]) {
+                    const items = weekData.schedule[day][hour];
+                    const index = items.findIndex(item => item.id === itemId);
+                    if (index !== -1) {
+                        items[index] = { ...items[index], ...updates };
+                    }
                 }
             }
         }
 
-        // Update in monthly tasks
-        if (this.currentYearData) {
-            for (const month in this.currentYearData.monthlyTasks) {
-                const items: SchedulerItem[] = this.currentYearData.monthlyTasks[month];
-                const index = items.findIndex(item => item.id === itemId);
-                if (index !== -1) {
-                    items[index] = { ...items[index], ...updates };
+        // 2) Update in monthly tasks
+        for (const month in this.currentYearData.monthlyTasks) {
+            const items: SchedulerItem[] = this.currentYearData.monthlyTasks[month];
+            const index = items.findIndex(item => item.id === itemId);
+            if (index !== -1) {
+                items[index] = { ...items[index], ...updates };
+            }
+        }
+
+        // 3) Get the updated snapshot of the item (after above merges)
+        const updatedItem = this.findItemById(itemId);
+
+        // 4) If this item is a DEADLINE, we re-locate it:
+        //    - remove all old weekly + monthly occurrences
+        //    - re-add it to the correct month + week based on deadlineDate/hour
+        if (updatedItem && updatedItem.itemType === 'deadline') {
+
+            // Remove from ALL weeks + ALL months in this year
+            if (this.currentYearData) {
+                // Remove from all weeks
+                for (const weekData of this.currentYearData.weeks) {
+                    for (const day in weekData.schedule) {
+                        for (const hour in weekData.schedule[day]) {
+                            weekData.schedule[day][hour] =
+                                weekData.schedule[day][hour].filter(i => i.id !== itemId);
+                        }
+                    }
                 }
+
+                // Remove from all months
+                for (const month in this.currentYearData.monthlyTasks) {
+                    this.currentYearData.monthlyTasks[month] =
+                        this.currentYearData.monthlyTasks[month].filter(i => i.id !== itemId);
+                }
+            }
+
+            // Re-add only if the deadline has valid date + hour
+            if (updatedItem.deadlineDate && updatedItem.deadlineHour != null && this.currentYearData) {
+                const date = DateUtils.fromISODateString(updatedItem.deadlineDate);
+                const monthIdx = date.getMonth();
+
+                if (!this.currentYearData.monthlyTasks[monthIdx]) {
+                    this.currentYearData.monthlyTasks[monthIdx] = [];
+                }
+
+                // Put into the correct month
+                this.currentYearData.monthlyTasks[monthIdx].push(updatedItem);
+
+                // And mirror into the correct week/day/hour
+                this.syncDeadlineIntoWeekly(updatedItem);
             }
         }
 
@@ -403,10 +446,34 @@ export default class SchedulerPlugin extends Plugin {
         this.refreshView();
     }
 
+
+    findItemById(itemId: string): SchedulerItem | null {
+        if (!this.currentYearData) return null;
+
+        // Search ALL weeks
+        for (const weekData of this.currentYearData.weeks) {
+            for (const day in weekData.schedule) {
+                for (const hour in weekData.schedule[day]) {
+                    const found = weekData.schedule[day][hour].find(i => i.id === itemId);
+                    if (found) return found;
+                }
+            }
+        }
+
+        // Then search monthly tasks
+        for (const month in this.currentYearData.monthlyTasks) {
+            const found = this.currentYearData.monthlyTasks[month].find(i => i.id === itemId);
+            if (found) return found;
+        }
+
+        return null;
+    }
+
     removeItem(itemId: string) {
-        const weekData = this.getCurrentWeekData();
-        if (weekData) {
-            // Remove from weekly schedule
+        if (!this.currentYearData) return;
+
+        // Remove from ALL weeks in this year
+        for (const weekData of this.currentYearData.weeks) {
             for (const day in weekData.schedule) {
                 for (const hour in weekData.schedule[day]) {
                     weekData.schedule[day][hour] =
@@ -415,16 +482,15 @@ export default class SchedulerPlugin extends Plugin {
             }
         }
 
-        // Remove from monthly tasks
-        if (this.currentYearData) {
-            for (const month in this.currentYearData.monthlyTasks) {
-                this.currentYearData.monthlyTasks[month] =
-                    this.currentYearData.monthlyTasks[month].filter(item => item.id !== itemId);
-            }
+        // Remove from ALL months
+        for (const month in this.currentYearData.monthlyTasks) {
+            this.currentYearData.monthlyTasks[month] =
+                this.currentYearData.monthlyTasks[month].filter(item => item.id !== itemId);
         }
 
         this.saveYearData();
     }
+
 
     refreshView() {
         const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_SCHEDULER);
