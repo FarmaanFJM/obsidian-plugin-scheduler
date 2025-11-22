@@ -3,6 +3,7 @@ import SchedulerPlugin from './main';
 import { AddItemModal } from './modal';
 import { EditItemModal } from './editModal';
 import { SchedulerItem } from './types';
+import { DateUtils } from './dateUtils';
 
 export const VIEW_TYPE_SCHEDULER = 'scheduler-view';
 
@@ -40,10 +41,62 @@ export class SchedulerView extends ItemView {
 
         // Weekly Scheduler Section
         const weeklySection = mainDiv.createDiv({ cls: 'scheduler-weekly-section' });
+        this.renderWeeklyHeader(weeklySection);
+        this.renderWeeklyScheduler(weeklySection);
 
-        // Header with title and buttons
-        const weeklyHeader = weeklySection.createDiv({ cls: 'scheduler-section-header' });
-        weeklyHeader.createEl('h2', { text: 'Weekly Schedule' });
+        // Monthly Tasks Section
+        const monthlySection = mainDiv.createDiv({ cls: 'scheduler-monthly-section' });
+        this.renderMonthlyHeader(monthlySection);
+        this.renderMonthlyTasks(monthlySection);
+    }
+
+    renderWeeklyHeader(container: Element) {
+        const weeklyHeader = container.createDiv({ cls: 'scheduler-section-header' });
+        
+        const titleContainer = weeklyHeader.createDiv({ cls: 'header-title-container' });
+        titleContainer.createEl('h2', { text: 'Weekly Schedule' });
+
+        // Get week date range
+        const startDate = DateUtils.getDateOfWeek(this.plugin.currentWeek, this.plugin.currentYear);
+        const endDate = DateUtils.getSunday(startDate);
+        const weekRangeString = DateUtils.getWeekRangeString(startDate, endDate);
+        
+        const weekNavContainer = titleContainer.createDiv({ cls: 'week-navigation' });
+        
+        const prevWeekBtn = weekNavContainer.createEl('button', {
+            cls: 'nav-btn',
+            text: '◀'
+        });
+        prevWeekBtn.addEventListener('click', async () => {
+            await this.plugin.changeWeek(-1);
+        });
+
+        const weekLabel = weekNavContainer.createEl('span', {
+            cls: 'week-label',
+            text: weekRangeString
+        });
+
+        const nextWeekBtn = weekNavContainer.createEl('button', {
+            cls: 'nav-btn',
+            text: '▶'
+        });
+        nextWeekBtn.addEventListener('click', async () => {
+            await this.plugin.changeWeek(1);
+        });
+
+        const todayBtn = weekNavContainer.createEl('button', {
+            cls: 'today-btn',
+            text: 'Today'
+        });
+        todayBtn.addEventListener('click', async () => {
+            const { weekNumber, year } = DateUtils.getCurrentWeekInfo();
+            if (this.plugin.currentYear !== year) {
+                await this.plugin.loadYearData(year);
+            }
+            this.plugin.currentWeek = weekNumber;
+            this.plugin.currentYear = year;
+            this.refresh();
+        });
 
         const buttonGroup = weeklyHeader.createDiv({ cls: 'header-button-group' });
 
@@ -63,7 +116,7 @@ export class SchedulerView extends ItemView {
             text: '🗑️ Clear Weekly'
         });
         clearWeeklyBtn.addEventListener('click', () => {
-            const confirmed = confirm('Clear non-standard weekly tasks?');
+            const confirmed = confirm('Clear non-standard weekly tasks for current week?');
             if (confirmed) {
                 this.plugin.clearNonStandardTasks();
             }
@@ -75,18 +128,54 @@ export class SchedulerView extends ItemView {
             text: '🗑️ Clear All'
         });
         clearAllBtn.addEventListener('click', () => {
-            const confirmed = confirm('Clear ALL tasks including standard tasks?');
+            const confirmed = confirm('Clear ALL tasks for current week including standard tasks?');
             if (confirmed) {
                 this.plugin.clearAllTasks();
             }
         });
+    }
 
-        this.renderWeeklyScheduler(weeklySection);
+    renderMonthlyHeader(container: Element) {
+        const monthlyHeader = container.createDiv({ cls: 'scheduler-section-header' });
+        
+        const titleContainer = monthlyHeader.createDiv({ cls: 'header-title-container' });
+        titleContainer.createEl('h2', { text: 'Monthly Goals' });
 
-        // Monthly Tasks Section
-        const monthlySection = mainDiv.createDiv({ cls: 'scheduler-monthly-section' });
-        monthlySection.createEl('h2', { text: 'Monthly Goals' });
-        this.renderMonthlyTasks(monthlySection);
+        const yearNavContainer = titleContainer.createDiv({ cls: 'year-navigation' });
+        
+        const prevYearBtn = yearNavContainer.createEl('button', {
+            cls: 'nav-btn',
+            text: '◀'
+        });
+        prevYearBtn.addEventListener('click', async () => {
+            await this.plugin.changeYear(-1);
+        });
+
+        const yearLabel = yearNavContainer.createEl('span', {
+            cls: 'year-label',
+            text: this.plugin.currentYear.toString()
+        });
+
+        const nextYearBtn = yearNavContainer.createEl('button', {
+            cls: 'nav-btn',
+            text: '▶'
+        });
+        nextYearBtn.addEventListener('click', async () => {
+            await this.plugin.changeYear(1);
+        });
+
+        const currentYearBtn = yearNavContainer.createEl('button', {
+            cls: 'today-btn',
+            text: 'Current Year'
+        });
+        currentYearBtn.addEventListener('click', async () => {
+            const currentYear = new Date().getFullYear();
+            if (this.plugin.currentYear !== currentYear) {
+                this.plugin.currentYear = currentYear;
+                await this.plugin.loadYearData(currentYear);
+                this.refresh();
+            }
+        });
     }
 
     renderWeeklyScheduler(container: Element) {
@@ -99,10 +188,14 @@ export class SchedulerView extends ItemView {
 
         const today = new Date();
         const currentDay = (today.getDay() + 6) % 7;
+        
+        // Check if we're viewing the current week
+        const { weekNumber, year } = DateUtils.getCurrentWeekInfo();
+        const isCurrentWeek = (this.plugin.currentWeek === weekNumber && this.plugin.currentYear === year);
 
         days.forEach((day, index) => {
             const header = headerRow.createDiv({ cls: 'day-header', text: day });
-            if (index === currentDay) {
+            if (index === currentDay && isCurrentWeek) {
                 header.addClass('is-today');
             }
         });
@@ -130,7 +223,7 @@ export class SchedulerView extends ItemView {
                 dayCell.dataset.day = dayIndex.toString();
                 dayCell.dataset.hour = hour.toString();
 
-                if (dayIndex === currentDay) {
+                if (dayIndex === currentDay && isCurrentWeek) {
                     dayCell.addClass('is-today');
                 }
 
@@ -387,6 +480,12 @@ export class SchedulerView extends ItemView {
             : 23;
 
         if (currentHour < startHour || currentHour > endHour) return;
+
+        // Only highlight if viewing current week
+        const { weekNumber, year } = DateUtils.getCurrentWeekInfo();
+        const isCurrentWeek = (this.plugin.currentWeek === weekNumber && this.plugin.currentYear === year);
+        
+        if (!isCurrentWeek) return;
 
         const allCells = this.containerEl.querySelectorAll('.day-cell');
         allCells.forEach((cell: HTMLElement) => {

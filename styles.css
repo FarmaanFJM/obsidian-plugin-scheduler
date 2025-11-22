@@ -26,7 +26,6 @@
     border: 1px solid var(--background-modifier-border);
     background-color: var(--background-primary);
     position: relative;
-    /* Important for time indicator positioning */
 }
 
 .weekly-header-row {
@@ -96,10 +95,8 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
     transition: all 0.2s;
     margin-bottom: 4px;
-    /* Background and border set via JavaScript */
 }
 
-/* Enhanced theme-specific adjustments for better contrast */
 .theme-light .scheduler-item-card {
     background-color: rgba(255, 255, 255, 0.95);
 }
@@ -117,7 +114,6 @@
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
 }
 
-/* Badge for standard/recurring tasks */
 .scheduler-item-card[data-standard="true"]::after {
     content: "⟳";
     position: absolute;
@@ -131,29 +127,24 @@
     opacity: 0.8;
 }
 
-/* Base styles for item text - let JavaScript set the color */
 .item-name {
     font-weight: 600;
     font-size: 0.9em;
     margin-bottom: 4px;
     padding-right: 20px;
-    /* Color is set dynamically via JavaScript based on background brightness */
 }
 
 .item-description {
     font-size: 0.85em;
     white-space: pre-wrap;
     word-wrap: break-word;
-    /* Color and opacity set dynamically via JavaScript based on background brightness */
 }
 
-/* Fallback for items without dynamic color set by JavaScript */
 .scheduler-item-card:not([style*="background"]) .item-name,
 .scheduler-item-card:not([style*="background"]) .item-description {
     color: var(--text-normal);
 }
 
-/* Delete button - positioned absolutely */
 .item-delete-btn {
     position: absolute;
     top: 4px;
@@ -375,7 +366,6 @@
     transform: scale(1.1);
 }
 
-/* Make sure notifications are visible */
 .notice {
     white-space: pre-wrap;
     max-width: 400px;
@@ -401,7 +391,6 @@
     border-color: #e74c3c;
 }
 
-/* Edit Standard Task Modal */
 .days-selection,
 .hours-selection {
     display: flex;
@@ -433,7 +422,7 @@
     border-color: var(--interactive-accent);
 }
 
-/* Current Hour Highlighting (simpler than line) */
+/* Current Hour Highlighting */
 .day-cell.current-hour-row,
 .time-cell.current-hour-row {
     background-color: rgba(231, 76, 60, 0.15) !important;
@@ -449,7 +438,7 @@
     color: #e74c3c;
 }
 
-/* Weekly section header with clear button */
+/* Weekly section header with navigation */
 .scheduler-section-header {
     display: flex;
     justify-content: space-between;
@@ -459,6 +448,64 @@
 
 .scheduler-section-header h2 {
     margin: 0;
+}
+
+.header-title-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Week and Year Navigation */
+.week-navigation,
+.year-navigation {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.week-label,
+.year-label {
+    font-size: 0.95em;
+    color: var(--text-muted);
+    min-width: 200px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.nav-btn {
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--background-modifier-border);
+    background-color: var(--background-secondary);
+    color: var(--text-normal);
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.2s;
+}
+
+.nav-btn:hover {
+    background-color: var(--background-modifier-hover);
+    border-color: var(--interactive-accent);
+    transform: translateY(-1px);
+}
+
+.today-btn {
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--interactive-accent);
+    background-color: rgba(52, 152, 219, 0.1);
+    color: var(--interactive-accent);
+    cursor: pointer;
+    font-size: 0.85em;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.today-btn:hover {
+    background-color: var(--interactive-accent);
+    color: white;
+    transform: translateY(-1px);
 }
 
 .clear-weekly-btn {
@@ -556,7 +603,6 @@
     background-color: var(--interactive-accent-hover);
 }
 
-/* Quick select buttons */
 .quick-select-buttons {
     display: flex;
     gap: 8px;
@@ -580,7 +626,6 @@
     border-color: var(--interactive-accent);
 }
 
-/* Sleep exception days */
 .sleep-days-selection {
     display: flex;
     gap: 8px;
@@ -610,7 +655,6 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Edit button for items */
 .item-buttons,
 .task-buttons {
     position: absolute;
@@ -651,7 +695,6 @@
     transform: scale(1.1);
 }
 
-/* Update delete button to work with new button container */
 .item-buttons .item-delete-btn,
 .task-buttons .task-delete-btn {
     position: static;
@@ -659,7 +702,6 @@
     height: 20px;
 }
 
-/* Header button group */
 .header-button-group {
     display: flex;
     gap: 8px;
@@ -684,7 +726,6 @@
     box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
 }
 
-/* Standard task warning in edit modal */
 .standard-task-warning {
     background-color: rgba(255, 152, 0, 0.1);
     border-left: 4px solid #ff9800;
@@ -699,7 +740,6 @@
     font-size: 0.9em;
 }
 
-/* Make edit modal scrollable */
 .edit-standard-task-modal {
     max-height: 80vh;
     overflow-y: auto;

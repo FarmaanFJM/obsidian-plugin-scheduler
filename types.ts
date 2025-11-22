@@ -4,11 +4,23 @@
 
 export interface SchedulerSettings {
     categories: CategoryConfig[];
-    weeklySchedule: WeeklySchedule;
-    monthlyTasks: MonthlyTasks;
     standardItems: StandardItemConfig[];
     sleepSchedule: SleepSchedule;
     showNotifications: boolean;
+}
+
+// Year-based data structure (stored in separate files like 2025.json)
+export interface YearData {
+    year: number;
+    weeks: WeekData[];
+    monthlyTasks: MonthlyTasks;
+}
+
+export interface WeekData {
+    weekNumber: number; // ISO week number
+    startDate: string; // ISO date string (Monday of the week)
+    endDate: string; // ISO date string (Sunday of the week)
+    schedule: WeeklySchedule;
 }
 
 export interface SleepSchedule {

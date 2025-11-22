@@ -1,7 +1,8 @@
 import { Notice, Plugin, WorkspaceLeaf } from 'obsidian';
-import { SchedulerSettings, SchedulerItem, CategoryConfig, StandardItemConfig } from './types';
+import { SchedulerSettings, SchedulerItem, CategoryConfig, StandardItemConfig, YearData, WeekData, WeeklySchedule } from './types';
 import { SchedulerSettingTab } from './settings';
 import { SchedulerView, VIEW_TYPE_SCHEDULER } from './view';
+import { DateUtils } from './dateUtils';
 
 const SCHEDULER_DATA_FOLDER = 'SchedulerData';
 const SCHEDULER_DATA_FILE = `${SCHEDULER_DATA_FOLDER}/data.json`;
@@ -15,8 +16,6 @@ const DEFAULT_SETTINGS: SchedulerSettings = {
         { id: 'personal', name: 'Personal', color: '#2ECC71' },
         { id: 'other', name: 'Other', color: '#95A5A6' }
     ],
-    weeklySchedule: {},
-    monthlyTasks: {},
     standardItems: [
         {
             name: 'Gym',
@@ -44,8 +43,18 @@ export default class SchedulerPlugin extends Plugin {
     private lastNotifiedHour: number = -1;
     private notificationInterval: number | null = null;
 
+    // Current view state
+    currentWeek: number;
+    currentYear: number;
+    currentYearData: YearData | null = null;
+
     async onload() {
         await this.loadSettings();
+
+        // Initialize current week/year
+        const { weekNumber, year } = DateUtils.getCurrentWeekInfo();
+        this.currentWeek = weekNumber;
+        this.currentYear = year;
 
         // Register the view
         this.registerView(
@@ -73,15 +82,15 @@ export default class SchedulerPlugin extends Plugin {
 
         this.addCommand({
             id: 'clear-non-standard-tasks',
-            name: 'Clear All Non-Standard Tasks',
+            name: 'Clear All Non-Standard Tasks (Current Week)',
             callback: () => this.clearNonStandardTasks()
         });
 
         this.addCommand({
             id: 'clear-all-tasks',
-            name: 'Clear ALL Tasks (Including Standard)',
+            name: 'Clear ALL Tasks (Current Week)',
             callback: () => {
-                const confirmed = confirm('Clear ALL tasks including standard/recurring tasks? This cannot be undone!');
+                const confirmed = confirm('Clear ALL tasks for current week including standard/recurring tasks? This cannot be undone!');
                 if (confirmed) {
                     this.clearAllTasks();
                 }
@@ -97,8 +106,8 @@ export default class SchedulerPlugin extends Plugin {
         // Add settings tab
         this.addSettingTab(new SchedulerSettingTab(this.app, this));
 
-        // Initialize schedule
-        this.initializeSchedule();
+        // Load current year data
+        await this.loadYearData(this.currentYear);
 
         // Start notification checker
         if (this.settings.showNotifications) {
@@ -124,50 +133,129 @@ export default class SchedulerPlugin extends Plugin {
         workspace.revealLeaf(leaf);
     }
 
-    initializeSchedule() {
-        if (!this.settings.weeklySchedule) {
-            this.settings.weeklySchedule = {};
-        }
+    // ========== YEAR DATA MANAGEMENT ==========
 
-        for (let day = 0; day < 7; day++) {
-            if (!this.settings.weeklySchedule[day]) {
-                this.settings.weeklySchedule[day] = {};
+    async loadYearData(year: number): Promise<void> {
+        const adapter = this.app.vault.adapter;
+        const yearFile = `${SCHEDULER_DATA_FOLDER}/${year}.json`;
+
+        if (await adapter.exists(yearFile)) {
+            try {
+                const data = await adapter.read(yearFile);
+                this.currentYearData = JSON.parse(data);
+            } catch (e) {
+                console.error(`Scheduler: Failed to read ${year}.json, creating new:`, e);
+                this.currentYearData = this.createEmptyYearData(year);
             }
-            for (let hour = 0; hour < 24; hour++) {
-                if (!this.settings.weeklySchedule[day][hour]) {
-                    this.settings.weeklySchedule[day][hour] = [];
-                }
-            }
-        }
-
-        if (!this.settings.monthlyTasks) {
-            this.settings.monthlyTasks = {};
-        }
-
-        for (let month = 0; month < 12; month++) {
-            if (!this.settings.monthlyTasks[month]) {
-                this.settings.monthlyTasks[month] = [];
-            }
-        }
-
-        // Initialize excludeDays if not present
-        if (!this.settings.sleepSchedule.excludeWakeDays) {
-            this.settings.sleepSchedule.excludeWakeDays = [];
-        }
-        if (!this.settings.sleepSchedule.excludeSleepDays) {
-            this.settings.sleepSchedule.excludeSleepDays = [];
+        } else {
+            this.currentYearData = this.createEmptyYearData(year);
         }
     }
 
+    async saveYearData(): Promise<void> {
+        if (!this.currentYearData) return;
+
+        const adapter = this.app.vault.adapter;
+        const yearFile = `${SCHEDULER_DATA_FOLDER}/${this.currentYearData.year}.json`;
+
+        // Ensure folder exists
+        if (!(await adapter.exists(SCHEDULER_DATA_FOLDER))) {
+            await adapter.mkdir(SCHEDULER_DATA_FOLDER);
+        }
+
+        await adapter.write(yearFile, JSON.stringify(this.currentYearData, null, 2));
+    }
+
+    createEmptyYearData(year: number): YearData {
+        return {
+            year,
+            weeks: [],
+            monthlyTasks: this.createEmptyMonthlyTasks()
+        };
+    }
+
+    createEmptyMonthlyTasks() {
+        const tasks: any = {};
+        for (let month = 0; month < 12; month++) {
+            tasks[month] = [];
+        }
+        return tasks;
+    }
+
+    createEmptyWeeklySchedule(): WeeklySchedule {
+        const schedule: WeeklySchedule = {};
+        for (let day = 0; day < 7; day++) {
+            schedule[day] = {};
+            for (let hour = 0; hour < 24; hour++) {
+                schedule[day][hour] = [];
+            }
+        }
+        return schedule;
+    }
+
+    // ========== WEEK NAVIGATION ==========
+
+    async changeWeek(delta: number): Promise<void> {
+        // Calculate new week
+        const currentDate = DateUtils.getDateOfWeek(this.currentWeek, this.currentYear);
+        const newDate = DateUtils.addWeeks(currentDate, delta);
+        const newWeekNumber = DateUtils.getWeekNumber(newDate);
+        const newYear = newDate.getFullYear();
+
+        // Check if year changed
+        if (newYear !== this.currentYear) {
+            this.currentYear = newYear;
+            await this.loadYearData(newYear);
+        }
+
+        this.currentWeek = newWeekNumber;
+        this.refreshView();
+    }
+
+    async changeYear(delta: number): Promise<void> {
+        this.currentYear += delta;
+        await this.loadYearData(this.currentYear);
+        this.refreshView();
+    }
+
+    getCurrentWeekData(): WeekData | null {
+        if (!this.currentYearData) return null;
+
+        let weekData = this.currentYearData.weeks.find(w => w.weekNumber === this.currentWeek);
+
+        // Create week if it doesn't exist
+        if (!weekData) {
+            const weekInfo = DateUtils.getCurrentWeekInfo();
+            const startDate = DateUtils.getDateOfWeek(this.currentWeek, this.currentYear);
+            const endDate = DateUtils.getSunday(startDate);
+
+            weekData = {
+                weekNumber: this.currentWeek,
+                startDate: DateUtils.toISODateString(startDate),
+                endDate: DateUtils.toISODateString(endDate),
+                schedule: this.createEmptyWeeklySchedule()
+            };
+
+            this.currentYearData.weeks.push(weekData);
+        }
+
+        return weekData;
+    }
+
+    // ========== ITEM MANAGEMENT ==========
+
     getItemsForCell(day: number, hour: number): SchedulerItem[] {
-        if (!this.settings.weeklySchedule[day]) return [];
-        if (!this.settings.weeklySchedule[day][hour]) return [];
-        return this.settings.weeklySchedule[day][hour];
+        const weekData = this.getCurrentWeekData();
+        if (!weekData) return [];
+        if (!weekData.schedule[day]) return [];
+        if (!weekData.schedule[day][hour]) return [];
+        return weekData.schedule[day][hour];
     }
 
     getMonthlyTasks(month: number): SchedulerItem[] {
-        if (!this.settings.monthlyTasks[month]) return [];
-        return this.settings.monthlyTasks[month];
+        if (!this.currentYearData) return [];
+        if (!this.currentYearData.monthlyTasks[month]) return [];
+        return this.currentYearData.monthlyTasks[month];
     }
 
     getCategoryById(id: string): CategoryConfig | undefined {
@@ -175,41 +263,49 @@ export default class SchedulerPlugin extends Plugin {
     }
 
     addItemToSchedule(day: number, hour: number, item: Omit<SchedulerItem, 'id'>) {
+        const weekData = this.getCurrentWeekData();
+        if (!weekData) return;
+
         const newItem: SchedulerItem = {
             ...item,
             id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
         };
 
-        if (!this.settings.weeklySchedule[day]) {
-            this.settings.weeklySchedule[day] = {};
+        if (!weekData.schedule[day]) {
+            weekData.schedule[day] = {};
         }
-        if (!this.settings.weeklySchedule[day][hour]) {
-            this.settings.weeklySchedule[day][hour] = [];
+        if (!weekData.schedule[day][hour]) {
+            weekData.schedule[day][hour] = [];
         }
 
-        this.settings.weeklySchedule[day][hour].push(newItem);
-        this.saveSettings();
+        weekData.schedule[day][hour].push(newItem);
+        this.saveYearData();
     }
 
     addMonthlyTask(month: number, item: Omit<SchedulerItem, 'id'>) {
+        if (!this.currentYearData) return;
+
         const newItem: SchedulerItem = {
             ...item,
             id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
         };
 
-        if (!this.settings.monthlyTasks[month]) {
-            this.settings.monthlyTasks[month] = [];
+        if (!this.currentYearData.monthlyTasks[month]) {
+            this.currentYearData.monthlyTasks[month] = [];
         }
 
-        this.settings.monthlyTasks[month].push(newItem);
-        this.saveSettings();
+        this.currentYearData.monthlyTasks[month].push(newItem);
+        this.saveYearData();
     }
 
     updateItem(itemId: string, updates: Partial<SchedulerItem>) {
+        const weekData = this.getCurrentWeekData();
+        if (!weekData) return;
+
         // Update in weekly schedule
-        for (const day in this.settings.weeklySchedule) {
-            for (const hour in this.settings.weeklySchedule[day]) {
-                const items = this.settings.weeklySchedule[day][hour];
+        for (const day in weekData.schedule) {
+            for (const hour in weekData.schedule[day]) {
+                const items = weekData.schedule[day][hour];
                 const index = items.findIndex(item => item.id === itemId);
                 if (index !== -1) {
                     items[index] = { ...items[index], ...updates };
@@ -218,34 +314,41 @@ export default class SchedulerPlugin extends Plugin {
         }
 
         // Update in monthly tasks
-        for (const month in this.settings.monthlyTasks) {
-            const items = this.settings.monthlyTasks[month];
-            const index = items.findIndex(item => item.id === itemId);
-            if (index !== -1) {
-                items[index] = { ...items[index], ...updates };
+        if (this.currentYearData) {
+            for (const month in this.currentYearData.monthlyTasks) {
+                const items: SchedulerItem[] = this.currentYearData.monthlyTasks[month];
+                const index = items.findIndex(item => item.id === itemId);
+                if (index !== -1) {
+                    items[index] = { ...items[index], ...updates };
+                }
             }
         }
 
-        this.saveSettings();
+        this.saveYearData();
         this.refreshView();
     }
 
     removeItem(itemId: string) {
-        // Remove from weekly schedule
-        for (const day in this.settings.weeklySchedule) {
-            for (const hour in this.settings.weeklySchedule[day]) {
-                this.settings.weeklySchedule[day][hour] =
-                    this.settings.weeklySchedule[day][hour].filter(item => item.id !== itemId);
+        const weekData = this.getCurrentWeekData();
+        if (weekData) {
+            // Remove from weekly schedule
+            for (const day in weekData.schedule) {
+                for (const hour in weekData.schedule[day]) {
+                    weekData.schedule[day][hour] =
+                        weekData.schedule[day][hour].filter(item => item.id !== itemId);
+                }
             }
         }
 
         // Remove from monthly tasks
-        for (const month in this.settings.monthlyTasks) {
-            this.settings.monthlyTasks[month] =
-                this.settings.monthlyTasks[month].filter(item => item.id !== itemId);
+        if (this.currentYearData) {
+            for (const month in this.currentYearData.monthlyTasks) {
+                this.currentYearData.monthlyTasks[month] =
+                    this.currentYearData.monthlyTasks[month].filter(item => item.id !== itemId);
+            }
         }
 
-        this.saveSettings();
+        this.saveYearData();
     }
 
     refreshView() {
@@ -258,6 +361,9 @@ export default class SchedulerPlugin extends Plugin {
     }
 
     populateStandardTasks() {
+        const weekData = this.getCurrentWeekData();
+        if (!weekData) return;
+
         let addedCount = 0;
 
         // Add sleep schedule (excluding specified days)
@@ -281,7 +387,7 @@ export default class SchedulerPlugin extends Plugin {
             for (let day = 0; day < 7; day++) {
                 // Add Sleep task (unless day is excluded)
                 if (!this.settings.sleepSchedule.excludeSleepDays.includes(day)) {
-                    const sleepExists = this.settings.weeklySchedule[day][this.settings.sleepSchedule.sleepTime]
+                    const sleepExists = weekData.schedule[day][this.settings.sleepSchedule.sleepTime]
                         .some(i => i.name === 'Sleep' && i.isStandard);
                     if (!sleepExists) {
                         this.addItemToSchedule(day, this.settings.sleepSchedule.sleepTime, sleepItem);
@@ -291,7 +397,7 @@ export default class SchedulerPlugin extends Plugin {
 
                 // Add Wake Up task (unless day is excluded)
                 if (!this.settings.sleepSchedule.excludeWakeDays.includes(day)) {
-                    const wakeExists = this.settings.weeklySchedule[day][this.settings.sleepSchedule.wakeTime]
+                    const wakeExists = weekData.schedule[day][this.settings.sleepSchedule.wakeTime]
                         .some(i => i.name === 'Wake Up' && i.isStandard);
                     if (!wakeExists) {
                         this.addItemToSchedule(day, this.settings.sleepSchedule.wakeTime, wakeItem);
@@ -317,7 +423,7 @@ export default class SchedulerPlugin extends Plugin {
                 const hours = standard.schedule[day];
 
                 for (const hour of hours) {
-                    const existing = this.settings.weeklySchedule[day][hour];
+                    const existing = weekData.schedule[day][hour];
                     const alreadyExists = existing.some(i =>
                         i.standardTaskName === standard.name && i.isStandard
                     );
@@ -330,7 +436,7 @@ export default class SchedulerPlugin extends Plugin {
             }
         }
 
-        this.saveSettings();
+        this.saveYearData();
         this.refreshView();
 
         if (addedCount === 0) {
@@ -341,11 +447,14 @@ export default class SchedulerPlugin extends Plugin {
     }
 
     updateStandardTask(oldName: string, newTask: StandardItemConfig) {
+        const weekData = this.getCurrentWeekData();
+        if (!weekData) return;
+
         // Remove all instances of old standard task
-        for (const day in this.settings.weeklySchedule) {
-            for (const hour in this.settings.weeklySchedule[day]) {
-                this.settings.weeklySchedule[day][hour] =
-                    this.settings.weeklySchedule[day][hour].filter(
+        for (const day in weekData.schedule) {
+            for (const hour in weekData.schedule[day]) {
+                weekData.schedule[day][hour] =
+                    weekData.schedule[day][hour].filter(
                         item => !(item.standardTaskName === oldName && item.isStandard)
                     );
             }
@@ -369,45 +478,53 @@ export default class SchedulerPlugin extends Plugin {
             }
         }
 
-        this.saveSettings();
+        this.saveYearData();
         this.refreshView();
     }
 
     clearNonStandardTasks() {
+        const weekData = this.getCurrentWeekData();
+        if (!weekData) return;
+
         let cleared = 0;
 
-        for (const day in this.settings.weeklySchedule) {
-            for (const hour in this.settings.weeklySchedule[day]) {
-                const original = this.settings.weeklySchedule[day][hour].length;
-                this.settings.weeklySchedule[day][hour] =
-                    this.settings.weeklySchedule[day][hour].filter(item => item.isStandard);
-                cleared += original - this.settings.weeklySchedule[day][hour].length;
+        for (const day in weekData.schedule) {
+            for (const hour in weekData.schedule[day]) {
+                const original = weekData.schedule[day][hour].length;
+                weekData.schedule[day][hour] =
+                    weekData.schedule[day][hour].filter(item => item.isStandard);
+                cleared += original - weekData.schedule[day][hour].length;
             }
         }
 
-        this.saveSettings();
+        this.saveYearData();
         this.refreshView();
         new Notice(`Cleared ${cleared} non-standard tasks!`);
     }
 
     clearMonthTasks(month: number) {
-        this.settings.monthlyTasks[month] = [];
-        this.saveSettings();
+        if (!this.currentYearData) return;
+
+        this.currentYearData.monthlyTasks[month] = [];
+        this.saveYearData();
         this.refreshView();
         new Notice('Month tasks cleared!');
     }
 
     clearAllTasks() {
+        const weekData = this.getCurrentWeekData();
+        if (!weekData) return;
+
         let cleared = 0;
 
-        for (const day in this.settings.weeklySchedule) {
-            for (const hour in this.settings.weeklySchedule[day]) {
-                cleared += this.settings.weeklySchedule[day][hour].length;
-                this.settings.weeklySchedule[day][hour] = [];
+        for (const day in weekData.schedule) {
+            for (const hour in weekData.schedule[day]) {
+                cleared += weekData.schedule[day][hour].length;
+                weekData.schedule[day][hour] = [];
             }
         }
 
-        this.saveSettings();
+        this.saveYearData();
         this.refreshView();
         new Notice(`Cleared all ${cleared} tasks!`);
     }
@@ -491,7 +608,6 @@ export default class SchedulerPlugin extends Plugin {
 
         // Apply settings
         this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded);
-        this.initializeSchedule();
     }
 
     async saveSettings() {
@@ -508,5 +624,4 @@ export default class SchedulerPlugin extends Plugin {
             JSON.stringify(this.settings, null, 2)
         );
     }
-
 }
