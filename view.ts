@@ -2,7 +2,7 @@ import { ItemView, Notice, WorkspaceLeaf } from 'obsidian';
 import SchedulerPlugin from './main';
 import { AddItemModal } from './modal';
 import { EditItemModal } from './editModal';
-import { SchedulerItem } from './types';
+import { SchedulerItem, CategoryConfig, ItemType } from './types';
 import { DateUtils } from './dateUtils';
 
 export const VIEW_TYPE_SCHEDULER = 'scheduler-view';
@@ -48,6 +48,11 @@ export class SchedulerView extends ItemView {
         const monthlySection = mainDiv.createDiv({ cls: 'scheduler-monthly-section' });
         this.renderMonthlyHeader(monthlySection);
         this.renderMonthlyTasks(monthlySection);
+
+        // General Goals Section
+        const goalsSection = mainDiv.createDiv({ cls: 'scheduler-goals-section' });
+        this.renderGoalsHeader(goalsSection);
+        this.renderGeneralGoals(goalsSection);
     }
 
     renderWeeklyHeader(container: Element) {
@@ -98,7 +103,7 @@ export class SchedulerView extends ItemView {
             this.refresh();
         });
 
-        // ================== NEW: Jump to Date ==================
+        // Jump to Date
         const jumpContainer = weekNavContainer.createDiv({ cls: 'week-jump-container' });
 
         const jumpInput = jumpContainer.createEl('input') as HTMLInputElement;
@@ -131,7 +136,6 @@ export class SchedulerView extends ItemView {
             this.plugin.currentYear = newYear;
             this.refresh();
         });
-        // =======================================================
 
         const buttonGroup = weeklyHeader.createDiv({ cls: 'header-button-group' });
 
@@ -441,7 +445,7 @@ export class SchedulerView extends ItemView {
         const tasksList = monthCol.createDiv({ cls: 'tasks-list' });
         const allTasks = this.plugin.getMonthlyTasks(monthIndex);
 
-        // ---- Group tasks by type ----
+        // Group tasks by type
         const groups: Record<'deadline' | 'goal' | 'task' | 'regular', SchedulerItem[]> = {
             deadline: [],
             goal: [],
@@ -476,20 +480,17 @@ export class SchedulerView extends ItemView {
             const items = groups[key];
             if (!items.length) continue;
 
-            // Section header like "-------- Deadlines --------"
+            // Section header
             const header = tasksList.createDiv({ cls: 'monthly-type-header' });
             header.setText(`──────── ${label} ────────`);
 
-            items.forEach(task => {
-                this.renderMonthlyTaskCard(tasksList, task);
+            items.forEach((task, index) => {
+                this.renderMonthlyTaskCard(tasksList, task, monthIndex, key, index, items.length);
             });
         }
     }
 
-    /**
- * Renders a single task in the Monthly column, with full type-based styling.
- */
-    private renderMonthlyTaskCard(tasksList: HTMLElement, task: SchedulerItem) {
+    private renderMonthlyTaskCard(tasksList: HTMLElement, task: SchedulerItem, monthIndex: number, taskType: string, index: number, totalCount: number) {
         const category = this.plugin.getCategoryById(task.categoryId);
         const taskCard = tasksList.createDiv({ cls: 'task-card' });
 
@@ -558,6 +559,28 @@ export class SchedulerView extends ItemView {
         // Button container
         const btnContainer = taskCard.createDiv({ cls: 'task-buttons' });
 
+        // Up button (if not first in this type group)
+        if (index > 0) {
+            const upBtn = btnContainer.createEl('button', {
+                cls: 'task-reorder-btn task-up-btn',
+                text: '▲'
+            });
+            upBtn.addEventListener('click', () => {
+                this.plugin.reorderMonthlyTask(task.id, monthIndex, taskType, 'up');
+            });
+        }
+
+        // Down button (if not last in this type group)
+        if (index < totalCount - 1) {
+            const downBtn = btnContainer.createEl('button', {
+                cls: 'task-reorder-btn task-down-btn',
+                text: '▼'
+            });
+            downBtn.addEventListener('click', () => {
+                this.plugin.reorderMonthlyTask(task.id, monthIndex, taskType, 'down');
+            });
+        }
+
         // Checkbox for tasks
         if (task.itemType === 'task') {
             const checkBtn = btnContainer.createEl('button', {
@@ -589,6 +612,203 @@ export class SchedulerView extends ItemView {
             this.refresh();
         });
     }
+
+    // ========== GENERAL GOALS RENDERING ==========
+
+    renderGoalsHeader(container: Element) {
+        const goalsHeader = container.createDiv({ cls: 'scheduler-section-header' });
+
+        const titleContainer = goalsHeader.createDiv({ cls: 'header-title-container' });
+        titleContainer.createEl('h2', { text: 'General Goals' });
+    }
+
+    renderGeneralGoals(container: Element) {
+        const goalsGrid = container.createDiv({ cls: 'goals-grid' });
+
+        const allGoals = this.plugin.getGeneralGoals();
+
+        // Group goals by category
+        const goalsByCategory: Record<string, SchedulerItem[]> = {};
+
+        this.plugin.settings.categories.forEach(cat => {
+            goalsByCategory[cat.id] = [];
+        });
+
+        allGoals.forEach(goal => {
+            if (goalsByCategory[goal.categoryId]) {
+                goalsByCategory[goal.categoryId].push(goal);
+            }
+        });
+
+        // Render in rows of 3 categories
+        const categories = this.plugin.settings.categories;
+        for (let i = 0; i < categories.length; i += 3) {
+            const goalsRow = goalsGrid.createDiv({ cls: 'goals-row' });
+
+            for (let j = 0; j < 3 && i + j < categories.length; j++) {
+                const category = categories[i + j];
+                const goals = goalsByCategory[category.id] || [];
+                this.renderGoalsCategoryColumn(goalsRow, category, goals);
+            }
+        }
+    }
+
+    renderGoalsCategoryColumn(row: HTMLElement, category: CategoryConfig, goals: SchedulerItem[]) {
+        const categoryCol = row.createDiv({ cls: 'goals-category-column' });
+
+        const categoryHeader = categoryCol.createDiv({ cls: 'goals-category-header' });
+        categoryHeader.createEl('h3', { text: category.name });
+
+        const addBtn = categoryHeader.createEl('button', {
+            cls: 'add-task-btn',
+            text: '+'
+        });
+        addBtn.addEventListener('click', () => {
+            this.openAddGeneralGoalModal(category.id);
+        });
+
+        const trashBtn = categoryHeader.createEl('button', {
+            cls: 'trash-task-btn',
+            text: '🗑️'
+        });
+        trashBtn.addEventListener('click', () => {
+            const confirmed = confirm(`Clear all goals for ${category.name}?`);
+            if (confirmed) {
+                this.plugin.clearCategoryGoals(category.id);
+            }
+        });
+
+        // Category divider (like monthly view)
+        if (goals.length > 0) {
+            const header = categoryCol.createDiv({ cls: 'monthly-type-header' });
+            header.setText(`──────── ${category.name.toUpperCase()} ────────`);
+        }
+
+        const goalsList = categoryCol.createDiv({ cls: 'goals-list' });
+        goals.forEach((goal, index) => {
+            this.renderGoalCard(goalsList, goal, index, goals.length);
+        });
+    }
+
+    renderGoalCard(goalsList: HTMLElement, goal: SchedulerItem, index: number, totalCount: number) {
+        const category = this.plugin.getCategoryById(goal.categoryId);
+        const goalCard = goalsList.createDiv({ cls: 'task-card item-type-goal' });
+
+        if (category) {
+            const baseColor = category.color;
+            const rgb = this.hexToRgb(baseColor);
+
+            // Set border colors for gold frame
+            goalCard.style.borderLeftColor = baseColor;
+            goalCard.style.borderRightColor = baseColor;
+            goalCard.style.borderTopColor = baseColor;
+            goalCard.style.borderBottomColor = baseColor;
+
+            goalCard.style.setProperty('--category-color-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+
+            const textColor = '#1a1a1a';
+
+            const nameDiv = goalCard.createDiv({ cls: 'task-name' });
+            nameDiv.setText(goal.name);
+            nameDiv.style.color = textColor;
+
+            if (goal.description) {
+                const descDiv = goalCard.createDiv({ cls: 'task-description' });
+                descDiv.setText(goal.description);
+                descDiv.style.color = textColor;
+                descDiv.style.opacity = '0.75';
+            }
+        } else {
+            // Fallback if no category
+            goalCard.createDiv({ cls: 'task-name', text: goal.name });
+            if (goal.description) {
+                goalCard.createDiv({ cls: 'task-description', text: goal.description });
+            }
+        }
+
+        // Button container
+        const btnContainer = goalCard.createDiv({ cls: 'task-buttons' });
+
+        // Up button (if not first)
+        if (index > 0) {
+            const upBtn = btnContainer.createEl('button', {
+                cls: 'task-reorder-btn task-up-btn',
+                text: '▲'
+            });
+            upBtn.addEventListener('click', () => {
+                this.plugin.reorderGeneralGoal(goal.id, 'up');
+            });
+        }
+
+        // Down button (if not last)
+        if (index < totalCount - 1) {
+            const downBtn = btnContainer.createEl('button', {
+                cls: 'task-reorder-btn task-down-btn',
+                text: '▼'
+            });
+            downBtn.addEventListener('click', () => {
+                this.plugin.reorderGeneralGoal(goal.id, 'down');
+            });
+        }
+
+        // Edit button
+        const editBtn = btnContainer.createEl('button', {
+            cls: 'task-edit-btn',
+            text: '✎'
+        });
+        editBtn.addEventListener('click', () => {
+            this.openEditGeneralGoalModal(goal);
+        });
+
+        // Delete button
+        const deleteBtn = btnContainer.createEl('button', {
+            cls: 'task-delete-btn',
+            text: '×'
+        });
+        deleteBtn.addEventListener('click', () => {
+            this.plugin.removeItem(goal.id);
+            this.refresh();
+        });
+    }
+
+    openAddGeneralGoalModal(categoryId?: string) {
+        const categoryName = categoryId 
+            ? this.plugin.settings.categories.find(c => c.id === categoryId)?.name 
+            : 'General';
+        
+        const modal = new AddItemModal(
+            this.app,
+            this.plugin.settings.categories,
+            `New Goal - ${categoryName}`,
+            (item: Omit<SchedulerItem, 'id'>) => {
+                // Override to ensure it's a goal type
+                const goalItem = {
+                    ...item,
+                    itemType: 'goal' as ItemType,
+                    categoryId: categoryId || item.categoryId
+                };
+                this.plugin.addGeneralGoal(goalItem);
+            },
+            {
+                lockedCategoryId: categoryId // Lock the category if provided
+            }
+        );
+        modal.open();
+    }
+
+    openEditGeneralGoalModal(goal: SchedulerItem) {
+        const modal = new EditItemModal(
+            this.app,
+            this.plugin.settings.categories,
+            goal,
+            (updates: Partial<SchedulerItem>) => {
+                this.plugin.updateItem(goal.id, updates);
+            }
+        );
+        modal.open();
+    }
+
+    // ========== MODAL HELPERS ==========
 
     openAddItemModal(day: number, hour: number) {
         const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -629,7 +849,7 @@ export class SchedulerView extends ItemView {
             },
             {
                 monthIndex: month,
-                year: this.plugin.currentYear    // <-- NEW
+                year: this.plugin.currentYear
             }
         );
         modal.open();
@@ -647,6 +867,8 @@ export class SchedulerView extends ItemView {
         );
         modal.open();
     }
+
+    // ========== UTILITY METHODS ==========
 
     getContrastColor(bgColor: string): string {
         const hex = bgColor.replace('#', '');

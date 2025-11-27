@@ -7,7 +7,7 @@
     /* ⬅ horizontal + vertical scroll here */
 }
 
-/* Force a “desktop” width that never shrinks */
+/* Force a "desktop" width that never shrinks */
 .scheduler-main {
     min-width: 1400px;
 }
@@ -234,8 +234,8 @@
 .item-type-deadline {
     position: relative;
     border-radius: 20px;
-    /* keep your round deadline */
     padding: 10px 12px;
+    overflow: hidden; /* FIXED: Prevent gradient from going outside */
 }
 
 .item-type-deadline::before {
@@ -245,7 +245,6 @@
     border-radius: 20px;
     pointer-events: none;
     padding: 3px;
-    /* thin frame thickness */
     background: linear-gradient(135deg, #c0392b, #8e2b1a);
     -webkit-mask:
         linear-gradient(#fff 0 0) content-box,
@@ -254,21 +253,21 @@
     mask-composite: exclude;
 }
 
-/* Metallic highlight */
+/* FIXED: Metallic highlight - contained within bounds */
 .item-type-deadline::after {
     content: "";
     position: absolute;
     top: 0;
     right: 0;
-    /* ← moved highlight */
     width: 45%;
     height: 100%;
-
+    border-radius: 0 20px 20px 0; /* Match parent border radius on right side */
     background: linear-gradient(to bottom left,
-            rgba(255, 255, 255, 0.18),
+            rgba(255, 255, 255, 0.18) 0%,
             rgba(255, 255, 255, 0.05) 40%,
-            rgba(255, 255, 255, 0.0));
+            rgba(255, 255, 255, 0.0) 100%);
     pointer-events: none;
+    z-index: 1; /* Ensure it's above background but below content */
 }
 
 .theme-light .item-type-deadline {
@@ -277,6 +276,14 @@
 
 .theme-dark .item-type-deadline {
     background-color: rgba(var(--category-color-rgb), 0.9);
+}
+
+/* Ensure content is above the gradient */
+.item-type-deadline .item-name,
+.item-type-deadline .item-description,
+.item-type-deadline .item-buttons {
+    position: relative;
+    z-index: 2;
 }
 
 /* Item Content */
@@ -464,11 +471,21 @@
     right: 0;
     width: 45%;
     height: 100%;
+    border-radius: 0 20px 20px 0;
     background: linear-gradient(to bottom left,
             rgba(255, 255, 255, 0.18),
             rgba(255, 255, 255, 0.05) 40%,
             rgba(255, 255, 255, 0.0));
     pointer-events: none;
+    z-index: 1;
+}
+
+/* Ensure content is above the gradient for task cards too */
+.task-card.item-type-deadline .task-name,
+.task-card.item-type-deadline .task-description,
+.task-card.item-type-deadline .task-buttons {
+    position: relative;
+    z-index: 2;
 }
 
 .task-card.item-type-goal {
@@ -952,6 +969,33 @@
     transform: scale(1.1);
 }
 
+.task-reorder-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: none;
+    background-color: rgba(155, 89, 182, 0.8);
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.task-reorder-btn:hover {
+    background-color: rgba(155, 89, 182, 1);
+    transform: scale(1.1);
+}
+
+.locked-category-display {
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
 .item-buttons .item-delete-btn,
 .task-buttons .task-delete-btn {
     position: static;
@@ -1049,6 +1093,59 @@
     min-width: 1600px !important;
 }
 
+/* ========== GENERAL GOALS SECTION ========== */
+.scheduler-goals-section {
+    margin-top: 40px;
+}
+
+.scheduler-goals-section h2 {
+    margin-bottom: 20px;
+    color: var(--text-normal);
+}
+
+.goals-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.goals-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.goals-category-column {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 12px;
+    background-color: var(--background-secondary);
+    min-height: 200px;
+}
+
+.goals-category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--background-modifier-border);
+    width: 100%;
+}
+
+.goals-category-header h3 {
+    margin: 0;
+    font-size: 1.1em;
+    color: var(--text-normal);
+    flex-grow: 1;
+}
+
+.goals-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
 /* DARK THEME — Improve readability for GOALS */
 .theme-dark .item-type-goal .item-name,
 .theme-dark .item-type-goal .item-description,
@@ -1094,9 +1191,10 @@
     .item-edit-btn,
     .task-edit-btn,
     .item-delete-btn,
-    .task-delete-btn {
-        width: 28px !important;
-        height: 28px !important;
+    .task-delete-btn,
+    .task-reorder-btn {
+        width: 32px !important;
+        height: 32px !important;
         font-size: 16px !important;
         border-radius: 6px !important;
     }

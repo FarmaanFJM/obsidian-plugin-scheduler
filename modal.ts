@@ -20,20 +20,28 @@ export class AddItemModal extends Modal {
     private deadlineDaySettingEl?: HTMLElement;
     private deadlineHourSettingEl?: HTMLElement;
 
+    // Locked category (for general goals)
+    private lockedCategoryId?: string;
+
     constructor(
         app: App,
         categories: CategoryConfig[],
         title: string,
         onSubmit: (item: Omit<SchedulerItem, 'id'>) => void,
-        options?: { monthIndex?: number; year?: number }
+        options?: { monthIndex?: number; year?: number; lockedCategoryId?: string }
     ) {
         super(app);
         this.categories = categories;
         this.title = title;
         this.onSubmit = onSubmit;
 
-        // Set default category
-        if (categories.length > 0) {
+        // Locked category support
+        this.lockedCategoryId = options?.lockedCategoryId;
+
+        // Set default category (locked or first)
+        if (this.lockedCategoryId) {
+            this.selectedCategoryId = this.lockedCategoryId;
+        } else if (categories.length > 0) {
             this.selectedCategoryId = categories[0].id;
         }
 
@@ -99,11 +107,24 @@ export class AddItemModal extends Modal {
                     });
             });
 
-        // Category dropdown
-        new Setting(contentEl)
+        // Category dropdown (locked or editable)
+        const categorySetting = new Setting(contentEl)
             .setName('Category')
-            .setDesc('Select a category')
-            .addDropdown(dropdown => {
+            .setDesc(this.lockedCategoryId ? 'Category (locked)' : 'Select a category');
+
+        if (this.lockedCategoryId) {
+            // Show locked category as text
+            const category = this.categories.find(c => c.id === this.lockedCategoryId);
+            const categoryText = contentEl.createDiv({ cls: 'locked-category-display' });
+            categoryText.setText(category?.name || 'Unknown');
+            categoryText.style.padding = '8px 12px';
+            categoryText.style.backgroundColor = 'var(--background-secondary)';
+            categoryText.style.borderRadius = '4px';
+            categoryText.style.marginTop = '8px';
+            categorySetting.controlEl.appendChild(categoryText);
+        } else {
+            // Show dropdown
+            categorySetting.addDropdown(dropdown => {
                 this.categories.forEach(cat => {
                     dropdown.addOption(cat.id, cat.name);
                 });
@@ -113,6 +134,7 @@ export class AddItemModal extends Modal {
                         this.selectedCategoryId = value;
                     });
             });
+        }
 
         // --- Monthly deadline fields (day + hour) ---
         if (this.isMonthlyContext) {

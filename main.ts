@@ -139,17 +139,27 @@ export default class SchedulerPlugin extends Plugin {
         const adapter = this.app.vault.adapter;
         const yearFile = `${SCHEDULER_DATA_FOLDER}/${year}.json`;
 
+        let yearData;
+
         if (await adapter.exists(yearFile)) {
             try {
-                const data = await adapter.read(yearFile);
-                this.currentYearData = JSON.parse(data);
+                const raw = await adapter.read(yearFile);
+                yearData = JSON.parse(raw);
+
+                // Backward compatibility
+                if (!yearData.generalGoals) {
+                    yearData.generalGoals = [];
+                }
+
             } catch (e) {
                 console.error(`Scheduler: Failed to read ${year}.json, creating new:`, e);
-                this.currentYearData = this.createEmptyYearData(year);
+                yearData = this.createEmptyYearData(year);
             }
         } else {
-            this.currentYearData = this.createEmptyYearData(year);
+            yearData = this.createEmptyYearData(year);
         }
+
+        this.currentYearData = yearData;
     }
 
     async saveYearData(): Promise<void> {
@@ -170,7 +180,8 @@ export default class SchedulerPlugin extends Plugin {
         return {
             year,
             weeks: [],
-            monthlyTasks: this.createEmptyMonthlyTasks()
+            monthlyTasks: this.createEmptyMonthlyTasks(),
+            generalGoals: []
         };
     }
 
@@ -266,6 +277,131 @@ export default class SchedulerPlugin extends Plugin {
 
     getCategoryById(id: string): CategoryConfig | undefined {
         return this.settings.categories.find(cat => cat.id === id);
+    }
+
+    // ========== GENERAL GOALS MANAGEMENT ==========
+
+    getGeneralGoals(): SchedulerItem[] {
+        if (!this.currentYearData) return [];
+        if (!this.currentYearData.generalGoals) {
+            this.currentYearData.generalGoals = [];
+        }
+        return this.currentYearData.generalGoals;
+    }
+
+    addGeneralGoal(item: Omit<SchedulerItem, 'id'>) {
+        if (!this.currentYearData) return;
+
+        const newItem: SchedulerItem = {
+            ...item,
+            id: `goal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            itemType: 'goal'
+        };
+
+        if (!this.currentYearData.generalGoals) {
+            this.currentYearData.generalGoals = [];
+        }
+
+        this.currentYearData.generalGoals.push(newItem);
+        this.saveYearData();
+        this.refreshView();
+    }
+
+    clearGeneralGoals() {
+        if (!this.currentYearData) return;
+
+        this.currentYearData.generalGoals = [];
+        this.saveYearData();
+        this.refreshView();
+        new Notice('General goals cleared!');
+    }
+
+    clearCategoryGoals(categoryId: string) {
+        if (!this.currentYearData) return;
+
+        this.currentYearData.generalGoals =
+            this.currentYearData.generalGoals.filter(goal => goal.categoryId !== categoryId);
+        this.saveYearData();
+        this.refreshView();
+        new Notice('Category goals cleared!');
+    }
+
+    reorderGeneralGoal(itemId: string, direction: 'up' | 'down') {
+        if (!this.currentYearData || !this.currentYearData.generalGoals) return;
+
+        const goals = this.currentYearData.generalGoals;
+        const index = goals.findIndex(g => g.id === itemId);
+
+        if (index === -1) return;
+
+        const goal = goals[index];
+        const categoryGoals = goals.filter(g => g.categoryId === goal.categoryId);
+        const indexInCategory = categoryGoals.findIndex(g => g.id === itemId);
+
+        if (direction === 'up' && indexInCategory > 0) {
+            // Find the goal above in the same category
+            const goalAbove = categoryGoals[indexInCategory - 1];
+            const globalIndexAbove = goals.findIndex(g => g.id === goalAbove.id);
+
+            // Swap
+            [goals[index], goals[globalIndexAbove]] = [goals[globalIndexAbove], goals[index]];
+        } else if (direction === 'down' && indexInCategory < categoryGoals.length - 1) {
+            // Find the goal below in the same category
+            const goalBelow = categoryGoals[indexInCategory + 1];
+            const globalIndexBelow = goals.findIndex(g => g.id === goalBelow.id);
+
+            // Swap
+            [goals[index], goals[globalIndexBelow]] = [goals[globalIndexBelow], goals[index]];
+        }
+
+        this.saveYearData();
+        this.refreshView();
+    }
+
+    reorderMonthlyTask(itemId: string, month: number, taskType: string, direction: 'up' | 'down') {
+        if (!this.currentYearData) return;
+
+        const tasks = this.currentYearData.monthlyTasks[month];
+        if (!tasks) return;
+
+        // Filter to only tasks of the same type
+        const typeTasks = tasks.filter(t => {
+            switch (taskType) {
+                case 'deadline': return t.itemType === 'deadline';
+                case 'goal': return t.itemType === 'goal';
+                case 'task': return t.itemType === 'task';
+                case 'regular': return t.itemType !== 'deadline' && t.itemType !== 'goal' && t.itemType !== 'task';
+                default: return false;
+            }
+        });
+
+        const indexInType = typeTasks.findIndex(t => t.id === itemId);
+        if (indexInType === -1) return;
+
+        if (direction === 'up' && indexInType > 0) {
+            // Find positions in main array
+            const currentTask = typeTasks[indexInType];
+            const taskAbove = typeTasks[indexInType - 1];
+
+            const globalIndex = tasks.findIndex(t => t.id === currentTask.id);
+            const globalIndexAbove = tasks.findIndex(t => t.id === taskAbove.id);
+
+            // Swap
+            [tasks[globalIndex], tasks[globalIndexAbove]] = [tasks[globalIndexAbove], tasks[globalIndex]];
+        } else if (direction === 'down' && indexInType < typeTasks.length - 1) {
+            // Find positions in main array
+            const currentTask = typeTasks[indexInType];
+            const taskBelow = typeTasks[indexInType + 1];
+
+            const globalIndex = tasks.findIndex(t => t.id === currentTask.id);
+            const globalIndexBelow = tasks.findIndex(t => t.id === taskBelow.id);
+
+            // Swap
+            [tasks[globalIndex], tasks[globalIndexBelow]] = [tasks[globalIndexBelow], tasks[globalIndex]];
+        }
+
+        this.saveYearData();
+        this.refreshView();
     }
 
     addItemToSchedule(day: number, hour: number, item: Omit<SchedulerItem, 'id'>) {
@@ -398,10 +534,21 @@ export default class SchedulerPlugin extends Plugin {
             }
         }
 
-        // 3) Get the updated snapshot of the item (after above merges)
+        // 3) Update in general goals
+        if (this.currentYearData.generalGoals) {
+            const index = this.currentYearData.generalGoals.findIndex(item => item.id === itemId);
+            if (index !== -1) {
+                this.currentYearData.generalGoals[index] = {
+                    ...this.currentYearData.generalGoals[index],
+                    ...updates
+                };
+            }
+        }
+
+        // 4) Get the updated snapshot of the item (after above merges)
         const updatedItem = this.findItemById(itemId);
 
-        // 4) If this item is a DEADLINE, we re-locate it:
+        // 5) If this item is a DEADLINE, we re-locate it:
         //    - remove all old weekly + monthly occurrences
         //    - re-add it to the correct month + week based on deadlineDate/hour
         if (updatedItem && updatedItem.itemType === 'deadline') {
@@ -466,6 +613,12 @@ export default class SchedulerPlugin extends Plugin {
             if (found) return found;
         }
 
+        // Then search general goals
+        if (this.currentYearData.generalGoals) {
+            const found = this.currentYearData.generalGoals.find(i => i.id === itemId);
+            if (found) return found;
+        }
+
         return null;
     }
 
@@ -486,6 +639,12 @@ export default class SchedulerPlugin extends Plugin {
         for (const month in this.currentYearData.monthlyTasks) {
             this.currentYearData.monthlyTasks[month] =
                 this.currentYearData.monthlyTasks[month].filter(item => item.id !== itemId);
+        }
+
+        // Remove from general goals
+        if (this.currentYearData.generalGoals) {
+            this.currentYearData.generalGoals =
+                this.currentYearData.generalGoals.filter(item => item.id !== itemId);
         }
 
         this.saveYearData();
