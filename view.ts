@@ -319,21 +319,45 @@ export class SchedulerView extends ItemView {
         });
 
         const backlogList = container.createDiv({ cls: 'backlog-list' });
-        const items = this.plugin.getBacklogItems();
+        const allItems = this.plugin.getBacklogItems();
 
-        if (items.length === 0) {
+        if (allItems.length === 0) {
             backlogList.createDiv({
                 cls: 'backlog-empty',
                 text: 'No items in backlog'
             });
         } else {
-            items.forEach((item, index) => {
-                this.renderBacklogItemCard(backlogList, item, index, items.length);
+            // Group backlog items by category
+            const itemsByCategory: Record<string, SchedulerItem[]> = {};
+
+            this.plugin.settings.categories.forEach(cat => {
+                itemsByCategory[cat.id] = [];
+            });
+
+            allItems.forEach(item => {
+                if (itemsByCategory[item.categoryId]) {
+                    itemsByCategory[item.categoryId].push(item);
+                }
+            });
+
+            // Render each category that has items
+            this.plugin.settings.categories.forEach(category => {
+                const items = itemsByCategory[category.id];
+                if (items.length === 0) return;
+
+                // Category divider
+                const header = backlogList.createDiv({ cls: 'monthly-type-header' });
+                header.setText(`──────── ${category.name.toUpperCase()} ────────`);
+
+                // Render items in this category
+                items.forEach((item, index) => {
+                    this.renderBacklogItemCard(backlogList, item, index, items.length, category.id);
+                });
             });
         }
     }
 
-    renderBacklogItemCard(backlogList: HTMLElement, item: SchedulerItem, index: number, totalCount: number) {
+    renderBacklogItemCard(backlogList: HTMLElement, item: SchedulerItem, index: number, totalCount: number, categoryId: string) {
         const category = this.plugin.getCategoryById(item.categoryId);
         const itemCard = backlogList.createDiv({ cls: 'task-card' });
 
@@ -389,25 +413,25 @@ export class SchedulerView extends ItemView {
         // Button container
         const btnContainer = itemCard.createDiv({ cls: 'task-buttons' });
 
-        // Up button
+        // Up button (within same category)
         if (index > 0) {
             const upBtn = btnContainer.createEl('button', {
                 cls: 'task-reorder-btn task-up-btn',
                 text: '▲'
             });
             upBtn.addEventListener('click', () => {
-                this.plugin.reorderBacklogItem(item.id, 'up');
+                this.plugin.reorderBacklogItemInCategory(item.id, categoryId, 'up');
             });
         }
 
-        // Down button
+        // Down button (within same category)
         if (index < totalCount - 1) {
             const downBtn = btnContainer.createEl('button', {
                 cls: 'task-reorder-btn task-down-btn',
                 text: '▼'
             });
             downBtn.addEventListener('click', () => {
-                this.plugin.reorderBacklogItem(item.id, 'down');
+                this.plugin.reorderBacklogItemInCategory(item.id, categoryId, 'down');
             });
         }
 

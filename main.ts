@@ -164,7 +164,7 @@ export default class SchedulerPlugin extends Plugin {
     async loadSettings() {
         const loaded = await this.atomicRead(SETTINGS_FILE);
         this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded);
-        
+
         if (!loaded) {
             await this.saveSettings();
         }
@@ -207,16 +207,26 @@ export default class SchedulerPlugin extends Plugin {
         new Notice('Backlog cleared!');
     }
 
-    async reorderBacklogItem(itemId: string, direction: 'up' | 'down') {
+    async reorderBacklogItemInCategory(itemId: string, categoryId: string, direction: 'up' | 'down') {
         const index = this.backlogItems.findIndex(i => i.id === itemId);
         if (index === -1) return;
 
-        if (direction === 'up' && index > 0) {
-            [this.backlogItems[index], this.backlogItems[index - 1]] = 
-                [this.backlogItems[index - 1], this.backlogItems[index]];
-        } else if (direction === 'down' && index < this.backlogItems.length - 1) {
-            [this.backlogItems[index], this.backlogItems[index + 1]] = 
-                [this.backlogItems[index + 1], this.backlogItems[index]];
+        const item = this.backlogItems[index];
+
+        // Get all items in the same category
+        const categoryItems = this.backlogItems.filter(i => i.categoryId === categoryId);
+        const indexInCategory = categoryItems.findIndex(i => i.id === itemId);
+
+        if (direction === 'up' && indexInCategory > 0) {
+            const itemAbove = categoryItems[indexInCategory - 1];
+            const globalIndexAbove = this.backlogItems.findIndex(i => i.id === itemAbove.id);
+            [this.backlogItems[index], this.backlogItems[globalIndexAbove]] =
+                [this.backlogItems[globalIndexAbove], this.backlogItems[index]];
+        } else if (direction === 'down' && indexInCategory < categoryItems.length - 1) {
+            const itemBelow = categoryItems[indexInCategory + 1];
+            const globalIndexBelow = this.backlogItems.findIndex(i => i.id === itemBelow.id);
+            [this.backlogItems[index], this.backlogItems[globalIndexBelow]] =
+                [this.backlogItems[globalIndexBelow], this.backlogItems[index]];
         }
 
         await this.saveBacklog();
@@ -275,12 +285,12 @@ export default class SchedulerPlugin extends Plugin {
         if (direction === 'up' && indexInCategory > 0) {
             const goalAbove = categoryGoals[indexInCategory - 1];
             const globalIndexAbove = this.generalGoals.findIndex(g => g.id === goalAbove.id);
-            [this.generalGoals[index], this.generalGoals[globalIndexAbove]] = 
+            [this.generalGoals[index], this.generalGoals[globalIndexAbove]] =
                 [this.generalGoals[globalIndexAbove], this.generalGoals[index]];
         } else if (direction === 'down' && indexInCategory < categoryGoals.length - 1) {
             const goalBelow = categoryGoals[indexInCategory + 1];
             const globalIndexBelow = this.generalGoals.findIndex(g => g.id === goalBelow.id);
-            [this.generalGoals[index], this.generalGoals[globalIndexBelow]] = 
+            [this.generalGoals[index], this.generalGoals[globalIndexBelow]] =
                 [this.generalGoals[globalIndexBelow], this.generalGoals[index]];
         }
 
@@ -620,7 +630,7 @@ export default class SchedulerPlugin extends Plugin {
         if (needsSaveBacklog) await this.saveBacklog();
         if (needsSaveGoals) await this.saveGoals();
         if (needsSaveYear) await this.saveYearData();
-        
+
         this.refreshView();
     }
 
@@ -646,7 +656,7 @@ export default class SchedulerPlugin extends Plugin {
         // Search goals
         const goalFound = this.generalGoals.find(i => i.id === itemId);
         if (goalFound) return goalFound;
-        
+
         // Search backlog
         const backlogFound = this.backlogItems.find(i => i.id === itemId);
         if (backlogFound) return backlogFound;
