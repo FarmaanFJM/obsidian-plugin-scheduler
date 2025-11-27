@@ -7,13 +7,21 @@ export interface SchedulerSettings {
     sleepSchedule: SleepSchedule;
     showNotifications: boolean;
 }
+
+export interface BacklogData {
+    items: SchedulerItem[];
+}
+
+export interface GoalsData {
+    items: SchedulerItem[];
+}
+
+
 // Year-based data structure (stored in separate files like 2025.json)
 export interface YearData {
     year: number;
     weeks: WeekData[];
     monthlyTasks: MonthlyTasks;
-    generalGoals: SchedulerItem[];
-    backlogItems: SchedulerItem[]; 
 }
 export interface WeekData {
     weekNumber: number; // ISO week number

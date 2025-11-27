@@ -5,7 +5,9 @@ import { SchedulerView, VIEW_TYPE_SCHEDULER } from './view';
 import { DateUtils } from './dateUtils';
 
 const SCHEDULER_DATA_FOLDER = 'SchedulerData';
-const SCHEDULER_DATA_FILE = `${SCHEDULER_DATA_FOLDER}/data.json`;
+const SETTINGS_FILE = `${SCHEDULER_DATA_FOLDER}/settings.json`;
+const BACKLOG_FILE = `${SCHEDULER_DATA_FOLDER}/backlog.json`;
+const GOALS_FILE = `${SCHEDULER_DATA_FOLDER}/goals.json`;
 
 const DEFAULT_SETTINGS: SchedulerSettings = {
     categories: [
@@ -22,9 +24,9 @@ const DEFAULT_SETTINGS: SchedulerSettings = {
             description: 'Morning workout',
             categoryId: 'health',
             schedule: {
-                0: [6], // Monday 06:00
-                2: [6], // Wednesday 06:00
-                4: [6]  // Friday 06:00
+                0: [6],
+                2: [6],
+                4: [6]
             }
         }
     ],
@@ -40,34 +42,33 @@ const DEFAULT_SETTINGS: SchedulerSettings = {
 
 export default class SchedulerPlugin extends Plugin {
     settings: SchedulerSettings;
+    private backlogItems: SchedulerItem[] = [];
+    private generalGoals: SchedulerItem[] = [];
     private lastNotifiedHour: number = -1;
     private notificationInterval: number | null = null;
 
-    // Current view state
     currentWeek: number;
     currentYear: number;
     currentYearData: YearData | null = null;
 
     async onload() {
         await this.loadSettings();
+        await this.loadBacklog();
+        await this.loadGoals();
 
-        // Initialize current week/year
         const { weekNumber, year } = DateUtils.getCurrentWeekInfo();
         this.currentWeek = weekNumber;
         this.currentYear = year;
 
-        // Register the view
         this.registerView(
             VIEW_TYPE_SCHEDULER,
             (leaf) => new SchedulerView(leaf, this)
         );
 
-        // Add ribbon icon
         this.addRibbonIcon('calendar', 'Open Scheduler', () => {
             this.activateView();
         });
 
-        // Add commands
         this.addCommand({
             id: 'open-scheduler',
             name: 'Open Scheduler',
@@ -103,13 +104,10 @@ export default class SchedulerPlugin extends Plugin {
             callback: () => this.refreshView()
         });
 
-        // Add settings tab
         this.addSettingTab(new SchedulerSettingTab(this.app, this));
 
-        // Load current year data
         await this.loadYearData(this.currentYear);
 
-        // Start notification checker
         if (this.settings.showNotifications) {
             this.startNotificationChecker();
         }
@@ -117,12 +115,9 @@ export default class SchedulerPlugin extends Plugin {
 
     async activateView() {
         const { workspace } = this.app;
-
-        // Try to find existing scheduler leaf
         let leaf = workspace.getLeavesOfType(VIEW_TYPE_SCHEDULER).first();
 
         if (!leaf) {
-            // Open a brand new main pane (center pane)
             leaf = workspace.getLeaf('tab');
             await leaf.setViewState({
                 type: VIEW_TYPE_SCHEDULER,
@@ -133,32 +128,173 @@ export default class SchedulerPlugin extends Plugin {
         workspace.revealLeaf(leaf);
     }
 
-    // ========== YEAR DATA MANAGEMENT ==========
+    // ========== FILE I/O - ATOMIC OPERATIONS ==========
+
+    private async ensureFolder() {
+        const adapter = this.app.vault.adapter;
+        if (!(await adapter.exists(SCHEDULER_DATA_FOLDER))) {
+            await adapter.mkdir(SCHEDULER_DATA_FOLDER);
+        }
+    }
+
+    private async atomicWrite(filePath: string, data: any) {
+        await this.ensureFolder();
+        const dataString = JSON.stringify(data, null, 2);
+        await this.app.vault.adapter.write(filePath, dataString);
+        // Force file system flush
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    private async atomicRead(filePath: string): Promise<any | null> {
+        const adapter = this.app.vault.adapter;
+        if (!(await adapter.exists(filePath))) {
+            return null;
+        }
+        try {
+            const raw = await adapter.read(filePath);
+            return JSON.parse(raw);
+        } catch (e) {
+            console.error(`Scheduler: Failed to read ${filePath}:`, e);
+            return null;
+        }
+    }
+
+    // ========== SETTINGS ==========
+
+    async loadSettings() {
+        const loaded = await this.atomicRead(SETTINGS_FILE);
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded);
+        
+        if (!loaded) {
+            await this.saveSettings();
+        }
+    }
+
+    async saveSettings() {
+        await this.atomicWrite(SETTINGS_FILE, this.settings);
+    }
+
+    // ========== BACKLOG ==========
+
+    async loadBacklog() {
+        const data = await this.atomicRead(BACKLOG_FILE);
+        this.backlogItems = data?.items || [];
+    }
+
+    async saveBacklog() {
+        await this.atomicWrite(BACKLOG_FILE, { items: this.backlogItems });
+    }
+
+    getBacklogItems(): SchedulerItem[] {
+        return this.backlogItems;
+    }
+
+    async addBacklogItem(item: Omit<SchedulerItem, 'id'>) {
+        const newItem: SchedulerItem = {
+            ...item,
+            id: `backlog-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        };
+
+        this.backlogItems.push(newItem);
+        await this.saveBacklog();
+        this.refreshView();
+    }
+
+    async clearBacklogItems() {
+        this.backlogItems = [];
+        await this.saveBacklog();
+        this.refreshView();
+        new Notice('Backlog cleared!');
+    }
+
+    async reorderBacklogItem(itemId: string, direction: 'up' | 'down') {
+        const index = this.backlogItems.findIndex(i => i.id === itemId);
+        if (index === -1) return;
+
+        if (direction === 'up' && index > 0) {
+            [this.backlogItems[index], this.backlogItems[index - 1]] = 
+                [this.backlogItems[index - 1], this.backlogItems[index]];
+        } else if (direction === 'down' && index < this.backlogItems.length - 1) {
+            [this.backlogItems[index], this.backlogItems[index + 1]] = 
+                [this.backlogItems[index + 1], this.backlogItems[index]];
+        }
+
+        await this.saveBacklog();
+        this.refreshView();
+    }
+
+    // ========== GENERAL GOALS ==========
+
+    async loadGoals() {
+        const data = await this.atomicRead(GOALS_FILE);
+        this.generalGoals = data?.items || [];
+    }
+
+    async saveGoals() {
+        await this.atomicWrite(GOALS_FILE, { items: this.generalGoals });
+    }
+
+    getGeneralGoals(): SchedulerItem[] {
+        return this.generalGoals;
+    }
+
+    async addGeneralGoal(item: Omit<SchedulerItem, 'id'>) {
+        const newItem: SchedulerItem = {
+            ...item,
+            id: `goal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            itemType: 'goal'
+        };
+
+        this.generalGoals.push(newItem);
+        await this.saveGoals();
+        this.refreshView();
+    }
+
+    async clearGeneralGoals() {
+        this.generalGoals = [];
+        await this.saveGoals();
+        this.refreshView();
+        new Notice('General goals cleared!');
+    }
+
+    async clearCategoryGoals(categoryId: string) {
+        this.generalGoals = this.generalGoals.filter(goal => goal.categoryId !== categoryId);
+        await this.saveGoals();
+        this.refreshView();
+        new Notice('Category goals cleared!');
+    }
+
+    async reorderGeneralGoal(itemId: string, direction: 'up' | 'down') {
+        const index = this.generalGoals.findIndex(g => g.id === itemId);
+        if (index === -1) return;
+
+        const goal = this.generalGoals[index];
+        const categoryGoals = this.generalGoals.filter(g => g.categoryId === goal.categoryId);
+        const indexInCategory = categoryGoals.findIndex(g => g.id === itemId);
+
+        if (direction === 'up' && indexInCategory > 0) {
+            const goalAbove = categoryGoals[indexInCategory - 1];
+            const globalIndexAbove = this.generalGoals.findIndex(g => g.id === goalAbove.id);
+            [this.generalGoals[index], this.generalGoals[globalIndexAbove]] = 
+                [this.generalGoals[globalIndexAbove], this.generalGoals[index]];
+        } else if (direction === 'down' && indexInCategory < categoryGoals.length - 1) {
+            const goalBelow = categoryGoals[indexInCategory + 1];
+            const globalIndexBelow = this.generalGoals.findIndex(g => g.id === goalBelow.id);
+            [this.generalGoals[index], this.generalGoals[globalIndexBelow]] = 
+                [this.generalGoals[globalIndexBelow], this.generalGoals[index]];
+        }
+
+        await this.saveGoals();
+        this.refreshView();
+    }
+
+    // ========== YEAR DATA ==========
 
     async loadYearData(year: number): Promise<void> {
-        const adapter = this.app.vault.adapter;
         const yearFile = `${SCHEDULER_DATA_FOLDER}/${year}.json`;
+        let yearData = await this.atomicRead(yearFile);
 
-        let yearData;
-
-        if (await adapter.exists(yearFile)) {
-            try {
-                const raw = await adapter.read(yearFile);
-                yearData = JSON.parse(raw);
-
-                // Backward compatibility
-                if (!yearData.generalGoals) {
-                    yearData.generalGoals = [];
-                }
-                if (!yearData.backlogItems) {
-                    yearData.backlogItems = [];
-                }
-
-            } catch (e) {
-                console.error(`Scheduler: Failed to read ${year}.json, creating new:`, e);
-                yearData = this.createEmptyYearData(year);
-            }
-        } else {
+        if (!yearData) {
             yearData = this.createEmptyYearData(year);
         }
 
@@ -167,25 +303,15 @@ export default class SchedulerPlugin extends Plugin {
 
     async saveYearData(): Promise<void> {
         if (!this.currentYearData) return;
-
-        const adapter = this.app.vault.adapter;
         const yearFile = `${SCHEDULER_DATA_FOLDER}/${this.currentYearData.year}.json`;
-
-        // Ensure folder exists
-        if (!(await adapter.exists(SCHEDULER_DATA_FOLDER))) {
-            await adapter.mkdir(SCHEDULER_DATA_FOLDER);
-        }
-
-        await adapter.write(yearFile, JSON.stringify(this.currentYearData, null, 2));
+        await this.atomicWrite(yearFile, this.currentYearData);
     }
 
     createEmptyYearData(year: number): YearData {
         return {
             year,
             weeks: [],
-            monthlyTasks: this.createEmptyMonthlyTasks(),
-            generalGoals: [],
-            backlogItems: []
+            monthlyTasks: this.createEmptyMonthlyTasks()
         };
     }
 
@@ -211,19 +337,11 @@ export default class SchedulerPlugin extends Plugin {
     // ========== WEEK NAVIGATION ==========
 
     async changeWeek(delta: number): Promise<void> {
-        // Get Monday of current week
         const currentMonday = DateUtils.getDateOfWeek(this.currentWeek, this.currentYear);
-
-        // Add weeks
         const newMonday = DateUtils.addWeeks(currentMonday, delta);
-
-        // Get the week number of the new date
         const newWeekNumber = DateUtils.getWeekNumber(newMonday);
-
-        // Get the correct year for this week (handles ISO week-year edge cases)
         const newYear = DateUtils.getYearForWeek(newWeekNumber, newMonday);
 
-        // Check if year changed
         if (newYear !== this.currentYear) {
             this.currentYear = newYear;
             await this.loadYearData(newYear);
@@ -244,9 +362,7 @@ export default class SchedulerPlugin extends Plugin {
 
         let weekData = this.currentYearData.weeks.find(w => w.weekNumber === this.currentWeek);
 
-        // Create week if it doesn't exist
         if (!weekData) {
-            const weekInfo = DateUtils.getCurrentWeekInfo();
             const startDate = DateUtils.getDateOfWeek(this.currentWeek, this.currentYear);
             const endDate = DateUtils.getSunday(startDate);
 
@@ -283,146 +399,12 @@ export default class SchedulerPlugin extends Plugin {
         return this.settings.categories.find(cat => cat.id === id);
     }
 
-    // ========== GENERAL GOALS MANAGEMENT ==========
-
-    getGeneralGoals(): SchedulerItem[] {
-        if (!this.currentYearData) return [];
-        if (!this.currentYearData.generalGoals) {
-            this.currentYearData.generalGoals = [];
-        }
-        return this.currentYearData.generalGoals;
-    }
-
-    addGeneralGoal(item: Omit<SchedulerItem, 'id'>) {
-        if (!this.currentYearData) return;
-
-        const newItem: SchedulerItem = {
-            ...item,
-            id: `goal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            itemType: 'goal'
-        };
-
-        if (!this.currentYearData.generalGoals) {
-            this.currentYearData.generalGoals = [];
-        }
-
-        this.currentYearData.generalGoals.push(newItem);
-        this.saveYearData();
-        this.refreshView();
-    }
-
-    clearGeneralGoals() {
-        if (!this.currentYearData) return;
-
-        this.currentYearData.generalGoals = [];
-        this.saveYearData();
-        this.refreshView();
-        new Notice('General goals cleared!');
-    }
-
-    clearCategoryGoals(categoryId: string) {
-        if (!this.currentYearData) return;
-
-        this.currentYearData.generalGoals =
-            this.currentYearData.generalGoals.filter(goal => goal.categoryId !== categoryId);
-        this.saveYearData();
-        this.refreshView();
-        new Notice('Category goals cleared!');
-    }
-
-    reorderGeneralGoal(itemId: string, direction: 'up' | 'down') {
-        if (!this.currentYearData || !this.currentYearData.generalGoals) return;
-
-        const goals = this.currentYearData.generalGoals;
-        const index = goals.findIndex(g => g.id === itemId);
-
-        if (index === -1) return;
-
-        const goal = goals[index];
-        const categoryGoals = goals.filter(g => g.categoryId === goal.categoryId);
-        const indexInCategory = categoryGoals.findIndex(g => g.id === itemId);
-
-        if (direction === 'up' && indexInCategory > 0) {
-            // Find the goal above in the same category
-            const goalAbove = categoryGoals[indexInCategory - 1];
-            const globalIndexAbove = goals.findIndex(g => g.id === goalAbove.id);
-
-            // Swap
-            [goals[index], goals[globalIndexAbove]] = [goals[globalIndexAbove], goals[index]];
-        } else if (direction === 'down' && indexInCategory < categoryGoals.length - 1) {
-            // Find the goal below in the same category
-            const goalBelow = categoryGoals[indexInCategory + 1];
-            const globalIndexBelow = goals.findIndex(g => g.id === goalBelow.id);
-
-            // Swap
-            [goals[index], goals[globalIndexBelow]] = [goals[globalIndexBelow], goals[index]];
-        }
-
-        this.saveYearData();
-        this.refreshView();
-    }
-
-    // ========== BACKLOG MANAGEMENT ==========
-
-    getBacklogItems(): SchedulerItem[] {
-        if (!this.currentYearData) return [];
-        if (!this.currentYearData.backlogItems) {
-            this.currentYearData.backlogItems = [];
-        }
-        return this.currentYearData.backlogItems;
-    }
-
-    addBacklogItem(item: Omit<SchedulerItem, 'id'>) {
-        if (!this.currentYearData) return;
-
-        const newItem: SchedulerItem = {
-            ...item,
-            id: `backlog-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        };
-
-        if (!this.currentYearData.backlogItems) {
-            this.currentYearData.backlogItems = [];
-        }
-
-        this.currentYearData.backlogItems.push(newItem);
-        this.saveYearData();
-        this.refreshView();
-    }
-
-    clearBacklogItems() {
-        if (!this.currentYearData) return;
-
-        this.currentYearData.backlogItems = [];
-        this.saveYearData();
-        this.refreshView();
-        new Notice('Backlog cleared!');
-    }
-
-    reorderBacklogItem(itemId: string, direction: 'up' | 'down') {
-        if (!this.currentYearData || !this.currentYearData.backlogItems) return;
-
-        const items = this.currentYearData.backlogItems;
-        const index = items.findIndex(i => i.id === itemId);
-
-        if (index === -1) return;
-
-        if (direction === 'up' && index > 0) {
-            [items[index], items[index - 1]] = [items[index - 1], items[index]];
-        } else if (direction === 'down' && index < items.length - 1) {
-            [items[index], items[index + 1]] = [items[index + 1], items[index]];
-        }
-
-        this.saveYearData();
-        this.refreshView();
-    }
-
-    reorderMonthlyTask(itemId: string, month: number, taskType: string, direction: 'up' | 'down') {
+    async reorderMonthlyTask(itemId: string, month: number, taskType: string, direction: 'up' | 'down') {
         if (!this.currentYearData) return;
 
         const tasks = this.currentYearData.monthlyTasks[month];
         if (!tasks) return;
 
-        // Filter to only tasks of the same type
         const typeTasks = tasks.filter(t => {
             switch (taskType) {
                 case 'deadline': return t.itemType === 'deadline';
@@ -437,32 +419,28 @@ export default class SchedulerPlugin extends Plugin {
         if (indexInType === -1) return;
 
         if (direction === 'up' && indexInType > 0) {
-            // Find positions in main array
             const currentTask = typeTasks[indexInType];
             const taskAbove = typeTasks[indexInType - 1];
 
             const globalIndex = tasks.findIndex(t => t.id === currentTask.id);
             const globalIndexAbove = tasks.findIndex(t => t.id === taskAbove.id);
 
-            // Swap
             [tasks[globalIndex], tasks[globalIndexAbove]] = [tasks[globalIndexAbove], tasks[globalIndex]];
         } else if (direction === 'down' && indexInType < typeTasks.length - 1) {
-            // Find positions in main array
             const currentTask = typeTasks[indexInType];
             const taskBelow = typeTasks[indexInType + 1];
 
             const globalIndex = tasks.findIndex(t => t.id === currentTask.id);
             const globalIndexBelow = tasks.findIndex(t => t.id === taskBelow.id);
 
-            // Swap
             [tasks[globalIndex], tasks[globalIndexBelow]] = [tasks[globalIndexBelow], tasks[globalIndex]];
         }
 
-        this.saveYearData();
+        await this.saveYearData();
         this.refreshView();
     }
 
-    addItemToSchedule(day: number, hour: number, item: Omit<SchedulerItem, 'id'>) {
+    async addItemToSchedule(day: number, hour: number, item: Omit<SchedulerItem, 'id'>) {
         const weekData = this.getCurrentWeekData();
         if (!weekData) return;
 
@@ -471,12 +449,10 @@ export default class SchedulerPlugin extends Plugin {
             id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
         };
 
-        // If we add a DEADLINE from the weekly grid:
-        // attach date/hour and also store it in the correct month.
         if (newItem.itemType === 'deadline' && this.currentYearData) {
             const monday = DateUtils.getDateOfWeek(this.currentWeek, this.currentYear);
             const date = new Date(monday);
-            date.setDate(monday.getDate() + day); // day: 0–6 → Mon–Sun
+            date.setDate(monday.getDate() + day);
 
             newItem.deadlineDate = DateUtils.toISODateString(date);
             newItem.deadlineHour = hour;
@@ -496,10 +472,10 @@ export default class SchedulerPlugin extends Plugin {
         }
 
         weekData.schedule[day][hour].push(newItem);
-        this.saveYearData();
+        await this.saveYearData();
     }
 
-    addMonthlyTask(month: number, item: Omit<SchedulerItem, 'id'>) {
+    async addMonthlyTask(month: number, item: Omit<SchedulerItem, 'id'>) {
         if (!this.currentYearData) return;
 
         const newItem: SchedulerItem = {
@@ -513,12 +489,11 @@ export default class SchedulerPlugin extends Plugin {
 
         this.currentYearData.monthlyTasks[month].push(newItem);
 
-        // If this is a deadline and we know its date/hour, mirror it into the weekly schedule
         if (newItem.itemType === 'deadline') {
             this.syncDeadlineIntoWeekly(newItem);
         }
 
-        this.saveYearData();
+        await this.saveYearData();
     }
 
     private syncDeadlineIntoWeekly(item: SchedulerItem) {
@@ -530,12 +505,10 @@ export default class SchedulerPlugin extends Plugin {
         const weekNumber = DateUtils.getWeekNumber(date);
         const weekYear = DateUtils.getYearForWeek(weekNumber, date);
 
-        // Only handle deadlines that belong to this year data
         if (weekYear !== this.currentYearData.year) {
             return;
         }
 
-        // Find or create the corresponding week
         let weekData = this.currentYearData.weeks.find(w => w.weekNumber === weekNumber);
         if (!weekData) {
             const startDate = DateUtils.getMonday(date);
@@ -549,7 +522,7 @@ export default class SchedulerPlugin extends Plugin {
             this.currentYearData.weeks.push(weekData);
         }
 
-        const dayOfWeek = (date.getDay() + 6) % 7; // Monday = 0
+        const dayOfWeek = (date.getDay() + 6) % 7;
         const hour = item.deadlineHour;
 
         if (!weekData.schedule[dayOfWeek]) {
@@ -559,18 +532,20 @@ export default class SchedulerPlugin extends Plugin {
             weekData.schedule[dayOfWeek][hour] = [];
         }
 
-        // Avoid duplicates by id
         const already = weekData.schedule[dayOfWeek][hour].some(i => i.id === item.id);
         if (!already) {
             weekData.schedule[dayOfWeek][hour].push(item);
         }
     }
 
-
-    updateItem(itemId: string, updates: Partial<SchedulerItem>) {
+    async updateItem(itemId: string, updates: Partial<SchedulerItem>) {
         if (!this.currentYearData) return;
 
-        // 1) Update in ALL weekly schedules for this year
+        let needsSaveBacklog = false;
+        let needsSaveGoals = false;
+        let needsSaveYear = false;
+
+        // 1) Update in weekly schedules
         for (const weekData of this.currentYearData.weeks) {
             for (const day in weekData.schedule) {
                 for (const hour in weekData.schedule[day]) {
@@ -578,6 +553,7 @@ export default class SchedulerPlugin extends Plugin {
                     const index = items.findIndex(item => item.id === itemId);
                     if (index !== -1) {
                         items[index] = { ...items[index], ...updates };
+                        needsSaveYear = true;
                     }
                 }
             }
@@ -589,42 +565,28 @@ export default class SchedulerPlugin extends Plugin {
             const index = items.findIndex(item => item.id === itemId);
             if (index !== -1) {
                 items[index] = { ...items[index], ...updates };
+                needsSaveYear = true;
             }
         }
 
         // 3) Update in general goals
-        if (this.currentYearData.generalGoals) {
-            const index = this.currentYearData.generalGoals.findIndex(item => item.id === itemId);
-            if (index !== -1) {
-                this.currentYearData.generalGoals[index] = {
-                    ...this.currentYearData.generalGoals[index],
-                    ...updates
-                };
-            }
+        const goalIndex = this.generalGoals.findIndex(item => item.id === itemId);
+        if (goalIndex !== -1) {
+            this.generalGoals[goalIndex] = { ...this.generalGoals[goalIndex], ...updates };
+            needsSaveGoals = true;
         }
 
-        // 4) Update in backlog items
-        if (this.currentYearData.backlogItems) {
-            const index = this.currentYearData.backlogItems.findIndex(item => item.id === itemId);
-            if (index !== -1) {
-                this.currentYearData.backlogItems[index] = {
-                    ...this.currentYearData.backlogItems[index],
-                    ...updates
-                };
-            }
+        // 4) Update in backlog
+        const backlogIndex = this.backlogItems.findIndex(item => item.id === itemId);
+        if (backlogIndex !== -1) {
+            this.backlogItems[backlogIndex] = { ...this.backlogItems[backlogIndex], ...updates };
+            needsSaveBacklog = true;
         }
 
-        // 5) Get the updated snapshot of the item (after above merges)
+        // 5) Handle deadline relocation
         const updatedItem = this.findItemById(itemId);
-
-        // 6) If this item is a DEADLINE, we re-locate it:
-        //    - remove all old weekly + monthly occurrences
-        //    - re-add it to the correct month + week based on deadlineDate/hour
         if (updatedItem && updatedItem.itemType === 'deadline') {
-
-            // Remove from ALL weeks + ALL months in this year
             if (this.currentYearData) {
-                // Remove from all weeks
                 for (const weekData of this.currentYearData.weeks) {
                     for (const day in weekData.schedule) {
                         for (const hour in weekData.schedule[day]) {
@@ -634,14 +596,12 @@ export default class SchedulerPlugin extends Plugin {
                     }
                 }
 
-                // Remove from all months
                 for (const month in this.currentYearData.monthlyTasks) {
                     this.currentYearData.monthlyTasks[month] =
                         this.currentYearData.monthlyTasks[month].filter(i => i.id !== itemId);
                 }
             }
 
-            // Re-add only if the deadline has valid date + hour
             if (updatedItem.deadlineDate && updatedItem.deadlineHour != null && this.currentYearData) {
                 const date = DateUtils.fromISODateString(updatedItem.deadlineDate);
                 const monthIdx = date.getMonth();
@@ -650,23 +610,24 @@ export default class SchedulerPlugin extends Plugin {
                     this.currentYearData.monthlyTasks[monthIdx] = [];
                 }
 
-                // Put into the correct month
                 this.currentYearData.monthlyTasks[monthIdx].push(updatedItem);
-
-                // And mirror into the correct week/day/hour
                 this.syncDeadlineIntoWeekly(updatedItem);
+                needsSaveYear = true;
             }
         }
 
-        this.saveYearData();
+        // Save only what changed
+        if (needsSaveBacklog) await this.saveBacklog();
+        if (needsSaveGoals) await this.saveGoals();
+        if (needsSaveYear) await this.saveYearData();
+        
         this.refreshView();
     }
-
 
     findItemById(itemId: string): SchedulerItem | null {
         if (!this.currentYearData) return null;
 
-        // Search ALL weeks
+        // Search weeks
         for (const weekData of this.currentYearData.weeks) {
             for (const day in weekData.schedule) {
                 for (const hour in weekData.schedule[day]) {
@@ -676,60 +637,73 @@ export default class SchedulerPlugin extends Plugin {
             }
         }
 
-        // Then search monthly tasks
+        // Search monthly tasks
         for (const month in this.currentYearData.monthlyTasks) {
             const found = this.currentYearData.monthlyTasks[month].find(i => i.id === itemId);
             if (found) return found;
         }
 
-        // Then search general goals
-        if (this.currentYearData.generalGoals) {
-            const found = this.currentYearData.generalGoals.find(i => i.id === itemId);
-            if (found) return found;
-        }
+        // Search goals
+        const goalFound = this.generalGoals.find(i => i.id === itemId);
+        if (goalFound) return goalFound;
         
-        // Then search backlog
-        if (this.currentYearData.backlogItems) {
-            const found = this.currentYearData.backlogItems.find(i => i.id === itemId);
-            if (found) return found;
-        }
+        // Search backlog
+        const backlogFound = this.backlogItems.find(i => i.id === itemId);
+        if (backlogFound) return backlogFound;
 
         return null;
     }
 
-    removeItem(itemId: string) {
+    async removeItem(itemId: string) {
         if (!this.currentYearData) return;
 
-        // Remove from ALL weeks in this year
+        let needsSaveBacklog = false;
+        let needsSaveGoals = false;
+        let needsSaveYear = false;
+
+        // Remove from weeks
         for (const weekData of this.currentYearData.weeks) {
             for (const day in weekData.schedule) {
                 for (const hour in weekData.schedule[day]) {
+                    const originalLength = weekData.schedule[day][hour].length;
                     weekData.schedule[day][hour] =
                         weekData.schedule[day][hour].filter(item => item.id !== itemId);
+                    if (weekData.schedule[day][hour].length < originalLength) {
+                        needsSaveYear = true;
+                    }
                 }
             }
         }
 
-        // Remove from ALL months
+        // Remove from months
         for (const month in this.currentYearData.monthlyTasks) {
+            const originalLength = this.currentYearData.monthlyTasks[month].length;
             this.currentYearData.monthlyTasks[month] =
                 this.currentYearData.monthlyTasks[month].filter(item => item.id !== itemId);
+            if (this.currentYearData.monthlyTasks[month].length < originalLength) {
+                needsSaveYear = true;
+            }
         }
 
-        // Remove from general goals
-        if (this.currentYearData.generalGoals) {
-            this.currentYearData.generalGoals =
-                this.currentYearData.generalGoals.filter(item => item.id !== itemId);
+        // Remove from goals
+        const originalGoalsLength = this.generalGoals.length;
+        this.generalGoals = this.generalGoals.filter(item => item.id !== itemId);
+        if (this.generalGoals.length < originalGoalsLength) {
+            needsSaveGoals = true;
         }
 
-        if (this.currentYearData.backlogItems) {
-            this.currentYearData.backlogItems =
-                this.currentYearData.backlogItems.filter(item => item.id !== itemId);
+        // Remove from backlog
+        const originalBacklogLength = this.backlogItems.length;
+        this.backlogItems = this.backlogItems.filter(item => item.id !== itemId);
+        if (this.backlogItems.length < originalBacklogLength) {
+            needsSaveBacklog = true;
         }
 
-        this.saveYearData();
+        // Save only what changed
+        if (needsSaveBacklog) await this.saveBacklog();
+        if (needsSaveGoals) await this.saveGoals();
+        if (needsSaveYear) await this.saveYearData();
     }
-
 
     refreshView() {
         const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_SCHEDULER);
@@ -740,13 +714,12 @@ export default class SchedulerPlugin extends Plugin {
         });
     }
 
-    populateStandardTasks() {
+    async populateStandardTasks() {
         const weekData = this.getCurrentWeekData();
         if (!weekData) return;
 
         let addedCount = 0;
 
-        // Add sleep schedule (excluding specified days)
         if (this.settings.sleepSchedule.enabled) {
             const sleepItem: Omit<SchedulerItem, 'id'> = {
                 name: 'Sleep',
@@ -769,29 +742,26 @@ export default class SchedulerPlugin extends Plugin {
             };
 
             for (let day = 0; day < 7; day++) {
-                // Add Sleep task (unless day is excluded)
                 if (!this.settings.sleepSchedule.excludeSleepDays.includes(day)) {
                     const sleepExists = weekData.schedule[day][this.settings.sleepSchedule.sleepTime]
                         .some(i => i.name === 'Sleep' && i.isStandard);
                     if (!sleepExists) {
-                        this.addItemToSchedule(day, this.settings.sleepSchedule.sleepTime, sleepItem);
+                        await this.addItemToSchedule(day, this.settings.sleepSchedule.sleepTime, sleepItem);
                         addedCount++;
                     }
                 }
 
-                // Add Wake Up task (unless day is excluded)
                 if (!this.settings.sleepSchedule.excludeWakeDays.includes(day)) {
                     const wakeExists = weekData.schedule[day][this.settings.sleepSchedule.wakeTime]
                         .some(i => i.name === 'Wake Up' && i.isStandard);
                     if (!wakeExists) {
-                        this.addItemToSchedule(day, this.settings.sleepSchedule.wakeTime, wakeItem);
+                        await this.addItemToSchedule(day, this.settings.sleepSchedule.wakeTime, wakeItem);
                         addedCount++;
                     }
                 }
             }
         }
 
-        // Add other standard items with new schedule structure
         for (const standard of this.settings.standardItems) {
             const item: Omit<SchedulerItem, 'id'> = {
                 name: standard.name,
@@ -803,7 +773,6 @@ export default class SchedulerPlugin extends Plugin {
                 standardTaskName: standard.name
             };
 
-            // Iterate through each day in the schedule
             for (const dayStr in standard.schedule) {
                 const day = parseInt(dayStr);
                 const hours = standard.schedule[day];
@@ -815,14 +784,14 @@ export default class SchedulerPlugin extends Plugin {
                     );
 
                     if (!alreadyExists) {
-                        this.addItemToSchedule(day, hour, item);
+                        await this.addItemToSchedule(day, hour, item);
                         addedCount++;
                     }
                 }
             }
         }
 
-        this.saveYearData();
+        await this.saveYearData();
         this.refreshView();
 
         if (addedCount === 0) {
@@ -832,11 +801,10 @@ export default class SchedulerPlugin extends Plugin {
         }
     }
 
-    updateStandardTask(oldName: string, newTask: StandardItemConfig) {
+    async updateStandardTask(oldName: string, newTask: StandardItemConfig) {
         const weekData = this.getCurrentWeekData();
         if (!weekData) return;
 
-        // Remove all instances of old standard task
         for (const day in weekData.schedule) {
             for (const hour in weekData.schedule[day]) {
                 weekData.schedule[day][hour] =
@@ -846,7 +814,6 @@ export default class SchedulerPlugin extends Plugin {
             }
         }
 
-        // Add new standard task instances
         const item: Omit<SchedulerItem, 'id'> = {
             name: newTask.name,
             description: newTask.description,
@@ -862,15 +829,15 @@ export default class SchedulerPlugin extends Plugin {
             const hours = newTask.schedule[day];
 
             for (const hour of hours) {
-                this.addItemToSchedule(day, hour, item);
+                await this.addItemToSchedule(day, hour, item);
             }
         }
 
-        this.saveYearData();
+        await this.saveYearData();
         this.refreshView();
     }
 
-    clearNonStandardTasks() {
+    async clearNonStandardTasks() {
         const weekData = this.getCurrentWeekData();
         if (!weekData) return;
 
@@ -885,21 +852,21 @@ export default class SchedulerPlugin extends Plugin {
             }
         }
 
-        this.saveYearData();
+        await this.saveYearData();
         this.refreshView();
         new Notice(`Cleared ${cleared} non-standard tasks!`);
     }
 
-    clearMonthTasks(month: number) {
+    async clearMonthTasks(month: number) {
         if (!this.currentYearData) return;
 
         this.currentYearData.monthlyTasks[month] = [];
-        this.saveYearData();
+        await this.saveYearData();
         this.refreshView();
         new Notice('Month tasks cleared!');
     }
 
-    clearAllTasks() {
+    async clearAllTasks() {
         const weekData = this.getCurrentWeekData();
         if (!weekData) return;
 
@@ -912,7 +879,7 @@ export default class SchedulerPlugin extends Plugin {
             }
         }
 
-        this.saveYearData();
+        await this.saveYearData();
         this.refreshView();
         new Notice(`Cleared all ${cleared} tasks!`);
     }
@@ -963,53 +930,5 @@ export default class SchedulerPlugin extends Plugin {
         if (this.notificationInterval !== null) {
             window.clearInterval(this.notificationInterval);
         }
-    }
-
-    async loadSettings() {
-        const adapter = this.app.vault.adapter;
-
-        // Ensure folder exists
-        if (!(await adapter.exists(SCHEDULER_DATA_FOLDER))) {
-            await adapter.mkdir(SCHEDULER_DATA_FOLDER);
-        }
-
-        let loaded: any = null;
-
-        // If file exists → load it
-        if (await adapter.exists(SCHEDULER_DATA_FILE)) {
-            try {
-                const data = await adapter.read(SCHEDULER_DATA_FILE);
-                loaded = JSON.parse(data);
-            } catch (e) {
-                console.error("Scheduler: Failed to read data.json, using defaults:", e);
-            }
-        }
-
-        // If file does NOT exist → create new file
-        if (!loaded) {
-            loaded = DEFAULT_SETTINGS;
-            await adapter.write(
-                SCHEDULER_DATA_FILE,
-                JSON.stringify(loaded, null, 2)
-            );
-        }
-
-        // Apply settings
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded);
-    }
-
-    async saveSettings() {
-        const adapter = this.app.vault.adapter;
-
-        // Ensure folder exists
-        if (!(await adapter.exists(SCHEDULER_DATA_FOLDER))) {
-            await adapter.mkdir(SCHEDULER_DATA_FOLDER);
-        }
-
-        // Save settings
-        await adapter.write(
-            SCHEDULER_DATA_FILE,
-            JSON.stringify(this.settings, null, 2)
-        );
     }
 }
