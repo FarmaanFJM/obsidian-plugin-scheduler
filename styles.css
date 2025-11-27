@@ -1162,6 +1162,83 @@
     color: #ffffff !important;
 }
 
+/* DARK THEME — Improve readability for TASKS */
+.theme-dark .item-type-task .item-name,
+.theme-dark .item-type-task .item-description,
+.theme-dark .task-card.item-type-task .task-name,
+.theme-dark .task-card.item-type-task .task-description {
+    color: #ffffff !important;
+}
+
+/* ========== BACKLOG SECTION ========== */
+.scheduler-backlog-section {
+    position: fixed;
+    right: 20px;
+    top: 80px;
+    width: 320px;
+    max-height: calc(100vh - 120px);
+    background-color: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-y: auto;
+    z-index: 5;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.backlog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--background-modifier-border);
+}
+
+.backlog-header h3 {
+    margin: 0;
+    font-size: 1.1em;
+    color: var(--text-normal);
+}
+
+.backlog-header-buttons {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.backlog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.backlog-empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 20px 0;
+    font-style: italic;
+}
+
+/* Make main content have right padding to avoid overlap */
+.scheduler-main {
+    min-width: 1400px;
+    padding-right: 360px; /* Space for fixed backlog */
+}
+
+/* Light theme - dark border for contrast */
+.theme-light .scheduler-backlog-section {
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Dark theme - light border for contrast */
+.theme-dark .scheduler-backlog-section {
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+
 /* ===== MOBILE FIX: buttons below text, always visible ===== */
 @media (max-width: 1200px) {
 
@@ -1204,4 +1281,62 @@
     .task-delete-btn {
         opacity: 1 !important;
     }
+
+    /* Mobile: make backlog non-fixed */
+    .scheduler-backlog-section {
+        position: static;
+        width: 100%;
+        margin-top: 40px;
+        max-height: none;
+    }
+    
+    .scheduler-main {
+        padding-right: 0;
+    }
+}
+
+/* ===== MOBILE FIX: buttons below text, always visible ===== */
+@media (max-width: 1200px) {
+
+    /* normal padding again, no reserve space on the right */
+    .scheduler-item-card,
+    .task-card {
+        padding-right: 12px;
+    }
+
+    /* buttons are part of the layout, below the text */
+    .item-buttons,
+    .task-buttons {
+        position: static;          /* no absolute positioning */
+        top: auto;
+        right: auto;
+        margin-top: 6px;
+        align-self: flex-end;
+
+        display: flex;
+        gap: 8px;
+        opacity: 1 !important;     /* always visible */
+        pointer-events: auto;
+    }
+
+    .item-check-btn,
+    .task-check-btn,
+    .item-edit-btn,
+    .task-edit-btn,
+    .item-delete-btn,
+    .task-delete-btn,
+    .task-reorder-btn {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 16px !important;
+        border-radius: 6px !important;
+    }
+
+    /* specifically ensure delete is visible */
+    .item-delete-btn,
+    .task-delete-btn {
+        opacity: 1 !important;
+    }
+
+    
 }

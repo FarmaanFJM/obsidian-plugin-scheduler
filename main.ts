@@ -150,6 +150,9 @@ export default class SchedulerPlugin extends Plugin {
                 if (!yearData.generalGoals) {
                     yearData.generalGoals = [];
                 }
+                if (!yearData.backlogItems) {
+                    yearData.backlogItems = [];
+                }
 
             } catch (e) {
                 console.error(`Scheduler: Failed to read ${year}.json, creating new:`, e);
@@ -181,7 +184,8 @@ export default class SchedulerPlugin extends Plugin {
             year,
             weeks: [],
             monthlyTasks: this.createEmptyMonthlyTasks(),
-            generalGoals: []
+            generalGoals: [],
+            backlogItems: []
         };
     }
 
@@ -352,6 +356,60 @@ export default class SchedulerPlugin extends Plugin {
 
             // Swap
             [goals[index], goals[globalIndexBelow]] = [goals[globalIndexBelow], goals[index]];
+        }
+
+        this.saveYearData();
+        this.refreshView();
+    }
+
+    // ========== BACKLOG MANAGEMENT ==========
+
+    getBacklogItems(): SchedulerItem[] {
+        if (!this.currentYearData) return [];
+        if (!this.currentYearData.backlogItems) {
+            this.currentYearData.backlogItems = [];
+        }
+        return this.currentYearData.backlogItems;
+    }
+
+    addBacklogItem(item: Omit<SchedulerItem, 'id'>) {
+        if (!this.currentYearData) return;
+
+        const newItem: SchedulerItem = {
+            ...item,
+            id: `backlog-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        };
+
+        if (!this.currentYearData.backlogItems) {
+            this.currentYearData.backlogItems = [];
+        }
+
+        this.currentYearData.backlogItems.push(newItem);
+        this.saveYearData();
+        this.refreshView();
+    }
+
+    clearBacklogItems() {
+        if (!this.currentYearData) return;
+
+        this.currentYearData.backlogItems = [];
+        this.saveYearData();
+        this.refreshView();
+        new Notice('Backlog cleared!');
+    }
+
+    reorderBacklogItem(itemId: string, direction: 'up' | 'down') {
+        if (!this.currentYearData || !this.currentYearData.backlogItems) return;
+
+        const items = this.currentYearData.backlogItems;
+        const index = items.findIndex(i => i.id === itemId);
+
+        if (index === -1) return;
+
+        if (direction === 'up' && index > 0) {
+            [items[index], items[index - 1]] = [items[index - 1], items[index]];
+        } else if (direction === 'down' && index < items.length - 1) {
+            [items[index], items[index + 1]] = [items[index + 1], items[index]];
         }
 
         this.saveYearData();
@@ -545,10 +603,21 @@ export default class SchedulerPlugin extends Plugin {
             }
         }
 
-        // 4) Get the updated snapshot of the item (after above merges)
+        // 4) Update in backlog items
+        if (this.currentYearData.backlogItems) {
+            const index = this.currentYearData.backlogItems.findIndex(item => item.id === itemId);
+            if (index !== -1) {
+                this.currentYearData.backlogItems[index] = {
+                    ...this.currentYearData.backlogItems[index],
+                    ...updates
+                };
+            }
+        }
+
+        // 5) Get the updated snapshot of the item (after above merges)
         const updatedItem = this.findItemById(itemId);
 
-        // 5) If this item is a DEADLINE, we re-locate it:
+        // 6) If this item is a DEADLINE, we re-locate it:
         //    - remove all old weekly + monthly occurrences
         //    - re-add it to the correct month + week based on deadlineDate/hour
         if (updatedItem && updatedItem.itemType === 'deadline') {
@@ -618,6 +687,12 @@ export default class SchedulerPlugin extends Plugin {
             const found = this.currentYearData.generalGoals.find(i => i.id === itemId);
             if (found) return found;
         }
+        
+        // Then search backlog
+        if (this.currentYearData.backlogItems) {
+            const found = this.currentYearData.backlogItems.find(i => i.id === itemId);
+            if (found) return found;
+        }
 
         return null;
     }
@@ -645,6 +720,11 @@ export default class SchedulerPlugin extends Plugin {
         if (this.currentYearData.generalGoals) {
             this.currentYearData.generalGoals =
                 this.currentYearData.generalGoals.filter(item => item.id !== itemId);
+        }
+
+        if (this.currentYearData.backlogItems) {
+            this.currentYearData.backlogItems =
+                this.currentYearData.backlogItems.filter(item => item.id !== itemId);
         }
 
         this.saveYearData();

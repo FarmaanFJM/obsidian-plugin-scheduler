@@ -53,6 +53,10 @@ export class SchedulerView extends ItemView {
         const goalsSection = mainDiv.createDiv({ cls: 'scheduler-goals-section' });
         this.renderGoalsHeader(goalsSection);
         this.renderGeneralGoals(goalsSection);
+
+        // Backlog Section (Fixed on right side)
+        const backlogSection = container.createDiv({ cls: 'scheduler-backlog-section' }); // ADD THIS
+        this.renderBacklog(backlogSection);
     }
 
     renderWeeklyHeader(container: Element) {
@@ -284,6 +288,183 @@ export class SchedulerView extends ItemView {
                 });
             });
         }
+    }
+
+    // ========== BACKLOG RENDERING ==========
+
+    renderBacklog(container: Element) {
+        const backlogHeader = container.createDiv({ cls: 'backlog-header' });
+        backlogHeader.createEl('h3', { text: 'To-Do Backlog' });
+
+        // Create button container
+        const buttonContainer = backlogHeader.createDiv({ cls: 'backlog-header-buttons' });
+
+        const addBtn = buttonContainer.createEl('button', {
+            cls: 'add-task-btn',
+            text: '+'
+        });
+        addBtn.addEventListener('click', () => {
+            this.openAddBacklogItemModal();
+        });
+
+        const trashBtn = buttonContainer.createEl('button', {
+            cls: 'trash-task-btn',
+            text: '🗑️'
+        });
+        trashBtn.addEventListener('click', () => {
+            const confirmed = confirm('Clear all backlog items?');
+            if (confirmed) {
+                this.plugin.clearBacklogItems();
+            }
+        });
+
+        const backlogList = container.createDiv({ cls: 'backlog-list' });
+        const items = this.plugin.getBacklogItems();
+
+        if (items.length === 0) {
+            backlogList.createDiv({
+                cls: 'backlog-empty',
+                text: 'No items in backlog'
+            });
+        } else {
+            items.forEach((item, index) => {
+                this.renderBacklogItemCard(backlogList, item, index, items.length);
+            });
+        }
+    }
+
+    renderBacklogItemCard(backlogList: HTMLElement, item: SchedulerItem, index: number, totalCount: number) {
+        const category = this.plugin.getCategoryById(item.categoryId);
+        const itemCard = backlogList.createDiv({ cls: 'task-card' });
+
+        // Add type-specific class
+        itemCard.addClass(`item-type-${item.itemType || 'regular'}`);
+
+        // Add completed class for tasks
+        if (item.itemType === 'task' && item.completed) {
+            itemCard.addClass('item-completed');
+        }
+
+        if (category) {
+            const baseColor = category.color;
+            const rgb = this.hexToRgb(baseColor);
+
+            itemCard.style.borderLeftColor = baseColor;
+            itemCard.style.setProperty('--category-color-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+
+            if (item.itemType === 'goal') {
+                itemCard.style.borderRightColor = baseColor;
+                itemCard.style.borderTopColor = baseColor;
+                itemCard.style.borderBottomColor = baseColor;
+            }
+
+            if (item.itemType === 'regular' || item.itemType === 'deadline') {
+                itemCard.style.backgroundColor = baseColor;
+            }
+
+            let textColor: string;
+            if (item.itemType === 'task' || item.itemType === 'goal') {
+                textColor = '#1a1a1a';
+            } else {
+                textColor = this.getContrastColor(baseColor);
+            }
+
+            const nameDiv = itemCard.createDiv({ cls: 'task-name' });
+            nameDiv.setText(item.name);
+            nameDiv.style.color = textColor;
+
+            if (item.description) {
+                const descDiv = itemCard.createDiv({ cls: 'task-description' });
+                descDiv.setText(item.description);
+                descDiv.style.color = textColor;
+                descDiv.style.opacity = '0.75';
+            }
+        } else {
+            itemCard.createDiv({ cls: 'task-name', text: item.name });
+            if (item.description) {
+                itemCard.createDiv({ cls: 'task-description', text: item.description });
+            }
+        }
+
+        // Button container
+        const btnContainer = itemCard.createDiv({ cls: 'task-buttons' });
+
+        // Up button
+        if (index > 0) {
+            const upBtn = btnContainer.createEl('button', {
+                cls: 'task-reorder-btn task-up-btn',
+                text: '▲'
+            });
+            upBtn.addEventListener('click', () => {
+                this.plugin.reorderBacklogItem(item.id, 'up');
+            });
+        }
+
+        // Down button
+        if (index < totalCount - 1) {
+            const downBtn = btnContainer.createEl('button', {
+                cls: 'task-reorder-btn task-down-btn',
+                text: '▼'
+            });
+            downBtn.addEventListener('click', () => {
+                this.plugin.reorderBacklogItem(item.id, 'down');
+            });
+        }
+
+        // Checkbox for tasks
+        if (item.itemType === 'task') {
+            const checkBtn = btnContainer.createEl('button', {
+                cls: 'task-check-btn',
+                text: item.completed ? '☑' : '☐'
+            });
+            checkBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.plugin.updateItem(item.id, { completed: !item.completed });
+            });
+        }
+
+        // Edit button
+        const editBtn = btnContainer.createEl('button', {
+            cls: 'task-edit-btn',
+            text: '✎'
+        });
+        editBtn.addEventListener('click', () => {
+            this.openEditBacklogItemModal(item);
+        });
+
+        // Delete button
+        const deleteBtn = btnContainer.createEl('button', {
+            cls: 'task-delete-btn',
+            text: '×'
+        });
+        deleteBtn.addEventListener('click', () => {
+            this.plugin.removeItem(item.id);
+            this.refresh();
+        });
+    }
+
+    openAddBacklogItemModal() {
+        const modal = new AddItemModal(
+            this.app,
+            this.plugin.settings.categories,
+            'New Backlog Item',
+            (item: Omit<SchedulerItem, 'id'>) => {
+                this.plugin.addBacklogItem(item);
+            }
+        );
+        modal.open();
+    }
+
+    openEditBacklogItemModal(item: SchedulerItem) {
+        const modal = new EditItemModal(
+            this.app,
+            this.plugin.settings.categories,
+            item,
+            (updates: Partial<SchedulerItem>) => {
+                this.plugin.updateItem(item.id, updates);
+            }
+        );
+        modal.open();
     }
 
     renderCellItems(cell: HTMLElement, items: SchedulerItem[]) {
@@ -772,10 +953,10 @@ export class SchedulerView extends ItemView {
     }
 
     openAddGeneralGoalModal(categoryId?: string) {
-        const categoryName = categoryId 
-            ? this.plugin.settings.categories.find(c => c.id === categoryId)?.name 
+        const categoryName = categoryId
+            ? this.plugin.settings.categories.find(c => c.id === categoryId)?.name
             : 'General';
-        
+
         const modal = new AddItemModal(
             this.app,
             this.plugin.settings.categories,

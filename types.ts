@@ -12,7 +12,8 @@ export interface YearData {
     year: number;
     weeks: WeekData[];
     monthlyTasks: MonthlyTasks;
-    generalGoals: SchedulerItem[]; // NEW: General goals list
+    generalGoals: SchedulerItem[];
+    backlogItems: SchedulerItem[]; 
 }
 export interface WeekData {
     weekNumber: number; // ISO week number
