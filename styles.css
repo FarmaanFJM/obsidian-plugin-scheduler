@@ -1,6 +1,88 @@
-/* Weekly Scheduler Section */
+/* ========================================
+   OBSIDIAN SCHEDULER PLUGIN STYLES
+   ======================================== */
+
+/* TABLE OF CONTENTS:
+   1. Layout & Container
+   2. Weekly Schedule
+   3. Monthly Schedule
+   4. General Goals
+   5. Collapsible Backlog Sidebar
+   6. Item Cards & Styling
+   7. Buttons & Controls
+   8. Navigation
+   9. Modals & Dialogs
+   10. Mobile Responsive
+*/
+
+/* ========================================
+   1. LAYOUT & CONTAINER
+   ======================================== */
+
+.scheduler-container {
+    padding: 20px;
+    padding-right: 0;
+    height: 100%;
+    background-color: var(--background-primary);
+    overflow: auto;
+    position: relative;
+}
+
+.scheduler-main {
+    min-width: 1400px;
+    margin-right: 360px; /* Space for expanded sidebar */
+    transition: margin-right 0.3s ease;
+}
+
+/* Adjust margin when sidebar is collapsed */
+.scheduler-backlog-section.backlog-collapsed ~ .scheduler-main {
+    margin-right: 60px;
+}
+
+/* Section headers with navigation */
+.scheduler-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.scheduler-section-header h2 {
+    margin: 0;
+}
+
+.header-title-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* ========================================
+   2. WEEKLY SCHEDULE
+   ======================================== */
+
 .scheduler-weekly-section {
     margin-bottom: 40px;
+}
+
+.scheduler-weekly-section h2 {
+    margin-bottom: 20px;
+    color: var(--text-normal);
+}
+
+/* Week navigation controls */
+.week-navigation {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.week-label {
+    font-size: 0.95em;
+    color: var(--text-muted);
+    min-width: 200px;
+    text-align: center;
+    font-weight: 500;
 }
 
 .week-jump-container {
@@ -24,11 +106,7 @@
     border-color: var(--interactive-accent);
 }
 
-.scheduler-weekly-section h2 {
-    margin-bottom: 20px;
-    color: var(--text-normal);
-}
-
+/* Weekly grid */
 .weekly-grid {
     display: grid;
     grid-template-columns: 80px repeat(7, 1fr);
@@ -56,6 +134,12 @@
 
 .time-header {
     border-right: 2px solid var(--background-modifier-border);
+}
+
+.day-header.is-today {
+    background-color: var(--interactive-accent) !important;
+    color: white !important;
+    font-weight: 700;
 }
 
 .weekly-hour-row {
@@ -96,242 +180,34 @@
     border-right: none;
 }
 
-/* Scheduler Item Cards - Base Styling */
-.scheduler-item-card,
-.task-card {
-    padding: 10px 12px;
-    position: relative;
-    transition: all 0.2s ease;
-    margin-bottom: 6px;
-    border-left-width: 4px;
-    border-left-style: solid;
-    max-width: 100%;
+.day-cell.is-today {
+    background-color: rgba(231, 76, 60, 0.08);
 }
 
-/* Light theme base */
-.theme-light .scheduler-item-card,
-.theme-light .task-card {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+.day-cell.is-today:hover {
+    background-color: rgba(231, 76, 60, 0.15);
 }
 
-/* Dark theme base */
-.theme-dark .scheduler-item-card,
-.theme-dark .task-card {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+/* Current hour highlighting */
+.day-cell.current-hour-cell,
+.time-cell.current-hour-cell {
+    background-color: rgba(231, 76, 60, 0.15) !important;
+    border: 2px solid rgba(231, 76, 60, 0.5);
 }
 
-.theme-light .scheduler-item-card:hover,
-.theme-light .task-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.day-cell.current-hour-cell:hover {
+    background-color: rgba(231, 76, 60, 0.25) !important;
 }
 
-.theme-dark .scheduler-item-card:hover,
-.theme-dark .task-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+.time-cell.current-hour-label {
+    font-weight: 700;
+    color: #e74c3c;
 }
 
-/* ========== TYPE: REGULAR ========== */
-/* Original style - full category color background */
-.item-type-regular {
-    border-radius: 4px;
-    border-left-width: 4px;
-}
+/* ========================================
+   3. MONTHLY SCHEDULE
+   ======================================== */
 
-.theme-light .item-type-regular {
-    background-color: rgba(var(--category-color-rgb), 1);
-}
-
-.theme-dark .item-type-regular {
-    background-color: rgba(var(--category-color-rgb), 0.9);
-}
-
-/* ========== TYPE: TASK ========== */
-/* Claude style - thick left border, lighter background */
-.item-type-task {
-    border-radius: 4px;
-    border-left-width: 5px;
-}
-
-.theme-light .item-type-task {
-    background: linear-gradient(135deg,
-            rgba(var(--category-color-rgb), 0.08) 0%,
-            rgba(var(--category-color-rgb), 0.12) 100%);
-}
-
-.theme-dark .item-type-task {
-    background: linear-gradient(135deg,
-            rgba(var(--category-color-rgb), 0.15) 0%,
-            rgba(var(--category-color-rgb), 0.20) 100%);
-}
-
-/* Completed tasks */
-.item-type-task.item-completed {
-    opacity: 0.55;
-}
-
-.item-type-task.item-completed .item-name,
-.item-type-task.item-completed .task-name {
-    text-decoration: line-through;
-}
-
-/* Remove default left border for goal + deadline */
-.item-type-goal,
-.item-type-deadline {
-    border-left: none !important;
-}
-
-/* ========== TYPE: GOAL (Classic Gold Outline) ========== */
-.item-type-goal {
-    position: relative;
-    border-radius: 4px;
-    padding: 10px 12px;
-}
-
-.item-type-goal::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    /* full frame */
-    border-radius: 4px;
-    pointer-events: none;
-    padding: 3px;
-    /* thin frame thickness */
-    background: linear-gradient(135deg, #FFD700, #C9A64D);
-    -webkit-mask:
-        linear-gradient(#fff 0 0) content-box,
-        linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-}
-
-.theme-light .item-type-goal {
-    background: linear-gradient(135deg,
-            rgba(var(--category-color-rgb), 0.08) 0%,
-            rgba(var(--category-color-rgb), 0.12) 100%);
-}
-
-.theme-dark .item-type-goal {
-    background: linear-gradient(135deg,
-            rgba(var(--category-color-rgb), 0.15) 0%,
-            rgba(var(--category-color-rgb), 0.20) 100%);
-}
-
-/* ========== TYPE: DEADLINE (Dark Red Accent Frame) ========== */
-.item-type-deadline {
-    position: relative;
-    border-radius: 20px;
-    padding: 10px 12px;
-    overflow: hidden; /* FIXED: Prevent gradient from going outside */
-}
-
-.item-type-deadline::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: 20px;
-    pointer-events: none;
-    padding: 3px;
-    background: linear-gradient(135deg, #c0392b, #8e2b1a);
-    -webkit-mask:
-        linear-gradient(#fff 0 0) content-box,
-        linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-}
-
-/* FIXED: Metallic highlight - contained within bounds */
-.item-type-deadline::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 45%;
-    height: 100%;
-    border-radius: 0 20px 20px 0; /* Match parent border radius on right side */
-    background: linear-gradient(to bottom left,
-            rgba(255, 255, 255, 0.18) 0%,
-            rgba(255, 255, 255, 0.05) 40%,
-            rgba(255, 255, 255, 0.0) 100%);
-    pointer-events: none;
-    z-index: 1; /* Ensure it's above background but below content */
-}
-
-.theme-light .item-type-deadline {
-    background-color: rgba(var(--category-color-rgb), 1);
-}
-
-.theme-dark .item-type-deadline {
-    background-color: rgba(var(--category-color-rgb), 0.9);
-}
-
-/* Ensure content is above the gradient */
-.item-type-deadline .item-name,
-.item-type-deadline .item-description,
-.item-type-deadline .item-buttons {
-    position: relative;
-    z-index: 2;
-}
-
-/* Item Content */
-.item-name,
-.task-name {
-    font-weight: 600;
-    font-size: 0.9em;
-    margin-bottom: 4px;
-    padding-right: 25px;
-    line-height: 1.4;
-    white-space: normal;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-}
-
-.item-description,
-.task-description {
-    font-size: 0.85em;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    line-height: 1.3;
-    margin-top: 4px;
-    white-space: normal;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-}
-
-.scheduler-item-card:not([style*="background"]) .item-name,
-.scheduler-item-card:not([style*="background"]) .item-description {
-    color: var(--text-normal);
-}
-
-.item-delete-btn {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: none;
-    background-color: rgba(255, 0, 0, 0.7);
-    color: white;
-    cursor: pointer;
-    font-size: 16px;
-    line-height: 1;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.scheduler-item-card:hover .item-delete-btn {
-    opacity: 1;
-}
-
-.item-delete-btn:hover {
-    background-color: rgba(255, 0, 0, 0.9);
-}
-
-/* Monthly Tasks Section */
 .scheduler-monthly-section {
     margin-top: 40px;
 }
@@ -341,6 +217,22 @@
     color: var(--text-normal);
 }
 
+/* Year navigation */
+.year-navigation {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.year-label {
+    font-size: 0.95em;
+    color: var(--text-muted);
+    min-width: 200px;
+    text-align: center;
+    font-weight: 500;
+}
+
+/* Monthly grid */
 .monthly-grid {
     display: flex;
     flex-direction: column;
@@ -378,6 +270,12 @@
     flex-grow: 1;
 }
 
+.tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
 .monthly-type-header {
     margin: 6px 0 4px;
     font-size: 0.75em;
@@ -388,6 +286,432 @@
     opacity: 0.85;
 }
 
+/* ========================================
+   4. GENERAL GOALS
+   ======================================== */
+
+.scheduler-goals-section {
+    margin-top: 40px;
+}
+
+.scheduler-goals-section h2 {
+    margin-bottom: 20px;
+    color: var(--text-normal);
+}
+
+.goals-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.goals-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.goals-category-column {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 12px;
+    background-color: var(--background-secondary);
+    min-height: 200px;
+}
+
+.goals-category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--background-modifier-border);
+    width: 100%;
+}
+
+.goals-category-header h3 {
+    margin: 0;
+    font-size: 1.1em;
+    color: var(--text-normal);
+    flex-grow: 1;
+}
+
+.goals-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* ========================================
+   5. COLLAPSIBLE BACKLOG SIDEBAR
+   ======================================== */
+
+.scheduler-backlog-section {
+    position: fixed;
+    right: 0;
+    top: 0;
+    height: 100vh;
+    background-color: var(--background-secondary);
+    border-left: 2px solid var(--background-modifier-border);
+    padding: 20px;
+    overflow-y: auto;
+    z-index: 10;
+    transition: width 0.3s ease, transform 0.3s ease;
+}
+
+/* Expanded state (default) */
+.scheduler-backlog-section.backlog-expanded {
+    width: 340px;
+    transform: translateX(0);
+}
+
+/* Collapsed state */
+.scheduler-backlog-section.backlog-collapsed {
+    width: 60px;
+    padding: 20px 10px;
+}
+
+.scheduler-backlog-section.backlog-collapsed .backlog-list,
+.scheduler-backlog-section.backlog-collapsed h3,
+.scheduler-backlog-section.backlog-collapsed .backlog-header-buttons {
+    display: none;
+}
+
+/* Backlog header */
+.scheduler-backlog-section.backlog-expanded .backlog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--background-modifier-border);
+}
+
+.scheduler-backlog-section.backlog-collapsed .backlog-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.backlog-header h3 {
+    margin: 0;
+    font-size: 1.1em;
+    color: var(--text-normal);
+    flex: 1;
+}
+
+.backlog-header-buttons {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+/* Toggle button */
+.backlog-toggle-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    background-color: var(--interactive-accent);
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    margin-bottom: 12px;
+}
+
+.scheduler-backlog-section.backlog-expanded .backlog-toggle-btn {
+    order: -1;
+    margin-bottom: 0;
+    margin-right: 12px;
+}
+
+.scheduler-backlog-section.backlog-collapsed .backlog-toggle-btn {
+    margin-bottom: 0;
+}
+
+.backlog-toggle-btn:hover {
+    background-color: var(--interactive-accent-hover);
+    transform: scale(1.1);
+}
+
+/* Backlog list */
+.backlog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.backlog-empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 20px 0;
+    font-style: italic;
+}
+
+/* Theme-specific shadows */
+.theme-light .scheduler-backlog-section {
+    border-left-color: rgba(0, 0, 0, 0.2);
+    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
+}
+
+.theme-dark .scheduler-backlog-section {
+    border-left-color: rgba(255, 255, 255, 0.15);
+    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.5);
+}
+
+/* ========================================
+   6. ITEM CARDS & STYLING
+   ======================================== */
+
+/* Base card styling */
+.scheduler-item-card,
+.task-card {
+    padding: 10px 12px;
+    position: relative;
+    transition: all 0.2s ease;
+    margin-bottom: 6px;
+    border-left-width: 4px;
+    border-left-style: solid;
+    max-width: 100%;
+}
+
+.theme-light .scheduler-item-card,
+.theme-light .task-card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.theme-dark .scheduler-item-card,
+.theme-dark .task-card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.theme-light .scheduler-item-card:hover,
+.theme-light .task-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.theme-dark .scheduler-item-card:hover,
+.theme-dark .task-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* Item content */
+.item-name,
+.task-name {
+    font-weight: 600;
+    font-size: 0.9em;
+    margin-bottom: 4px;
+    padding-right: 25px;
+    line-height: 1.4;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.item-description,
+.task-description {
+    font-size: 0.85em;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.3;
+    margin-top: 4px;
+    overflow-wrap: anywhere;
+}
+
+.scheduler-item-card:not([style*="background"]) .item-name,
+.scheduler-item-card:not([style*="background"]) .item-description {
+    color: var(--text-normal);
+}
+
+/* TYPE: REGULAR (full color background) */
+.item-type-regular {
+    border-radius: 4px;
+    border-left-width: 4px;
+}
+
+.theme-light .item-type-regular {
+    background-color: rgba(var(--category-color-rgb), 1);
+}
+
+.theme-dark .item-type-regular {
+    background-color: rgba(var(--category-color-rgb), 0.9);
+}
+
+/* TYPE: TASK (thick left border, light background) */
+.item-type-task {
+    border-radius: 4px;
+    border-left-width: 5px;
+}
+
+.theme-light .item-type-task {
+    background: linear-gradient(135deg,
+        rgba(var(--category-color-rgb), 0.08) 0%,
+        rgba(var(--category-color-rgb), 0.12) 100%);
+}
+
+.theme-dark .item-type-task {
+    background: linear-gradient(135deg,
+        rgba(var(--category-color-rgb), 0.15) 0%,
+        rgba(var(--category-color-rgb), 0.20) 100%);
+}
+
+.item-type-task.item-completed {
+    opacity: 0.55;
+}
+
+.item-type-task.item-completed .item-name,
+.item-type-task.item-completed .task-name {
+    text-decoration: line-through;
+}
+
+/* TYPE: GOAL (gold frame) */
+.item-type-goal,
+.item-type-deadline {
+    border-left: none !important;
+}
+
+.item-type-goal {
+    position: relative;
+    border-radius: 4px;
+    padding: 10px 12px;
+}
+
+.item-type-goal::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 4px;
+    pointer-events: none;
+    padding: 3px;
+    background: linear-gradient(135deg, #FFD700, #C9A64D);
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+}
+
+.theme-light .item-type-goal {
+    background: linear-gradient(135deg,
+        rgba(var(--category-color-rgb), 0.08) 0%,
+        rgba(var(--category-color-rgb), 0.12) 100%);
+}
+
+.theme-dark .item-type-goal {
+    background: linear-gradient(135deg,
+        rgba(var(--category-color-rgb), 0.15) 0%,
+        rgba(var(--category-color-rgb), 0.20) 100%);
+}
+
+/* TYPE: DEADLINE (dark red frame with metallic shine) */
+.item-type-deadline {
+    position: relative;
+    border-radius: 20px;
+    padding: 10px 12px;
+    overflow: hidden;
+}
+
+.item-type-deadline::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+    pointer-events: none;
+    padding: 3px;
+    background: linear-gradient(135deg, #c0392b, #8e2b1a);
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+}
+
+.item-type-deadline::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 45%;
+    height: 100%;
+    border-radius: 0 20px 20px 0;
+    background: linear-gradient(to bottom left,
+        rgba(255, 255, 255, 0.18) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.0) 100%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.theme-light .item-type-deadline {
+    background-color: rgba(var(--category-color-rgb), 1);
+}
+
+.theme-dark .item-type-deadline {
+    background-color: rgba(var(--category-color-rgb), 0.9);
+}
+
+.item-type-deadline .item-name,
+.item-type-deadline .item-description,
+.item-type-deadline .item-buttons,
+.task-card.item-type-deadline .task-name,
+.task-card.item-type-deadline .task-description,
+.task-card.item-type-deadline .task-buttons {
+    position: relative;
+    z-index: 2;
+}
+
+/* Dark theme text improvements */
+.theme-dark .item-type-goal .item-name,
+.theme-dark .item-type-goal .item-description,
+.theme-dark .task-card.item-type-goal .task-name,
+.theme-dark .task-card.item-type-goal .task-description,
+.theme-dark .item-type-task .item-name,
+.theme-dark .item-type-task .item-description,
+.theme-dark .task-card.item-type-task .task-name,
+.theme-dark .task-card.item-type-task .task-description {
+    color: #ffffff !important;
+}
+
+/* Task card specific overrides */
+.task-card {
+    padding: 10px;
+    border-radius: 4px;
+    background-color: var(--background-primary);
+    position: relative;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.task-card.item-type-goal,
+.task-card.item-type-deadline {
+    border-left: none !important;
+}
+
+.task-card.item-type-deadline {
+    border-radius: 20px !important;
+    overflow: hidden;
+}
+
+.task-card.item-type-goal::before,
+.task-card.item-type-deadline::before,
+.task-card.item-type-deadline::after {
+    /* Inherit pseudo-element styles from item-type classes above */
+}
+
+/* ========================================
+   7. BUTTONS & CONTROLS
+   ======================================== */
+
+/* Action buttons (add, trash, etc.) */
 .add-task-btn {
     width: 28px;
     height: 28px;
@@ -408,178 +732,6 @@
     transform: scale(1.1);
 }
 
-.tasks-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.task-card {
-    padding: 10px;
-    border-radius: 4px;
-    background-color: var(--background-primary);
-    position: relative;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s;
-}
-
-.task-card.item-type-goal,
-.task-card.item-type-deadline {
-    border-left: none !important;
-}
-
-.task-card.item-type-deadline {
-    position: relative;
-    border-radius: 20px !important;
-    padding: 10px 12px;
-    overflow: hidden;
-}
-
-.task-card.item-type-deadline::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: 20px;
-    pointer-events: none;
-    padding: 3px;
-    background: linear-gradient(135deg, #c0392b, #8e2b1a);
-    -webkit-mask:
-        linear-gradient(#fff 0 0) content-box,
-        linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-}
-
-.task-card.item-type-deadline::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 45%;
-    height: 100%;
-    border-radius: 0 20px 20px 0;
-    background: linear-gradient(to bottom left,
-            rgba(255, 255, 255, 0.18),
-            rgba(255, 255, 255, 0.05) 40%,
-            rgba(255, 255, 255, 0.0));
-    pointer-events: none;
-    z-index: 1;
-}
-
-/* Ensure content is above the gradient for task cards too */
-.task-card.item-type-deadline .task-name,
-.task-card.item-type-deadline .task-description,
-.task-card.item-type-deadline .task-buttons {
-    position: relative;
-    z-index: 2;
-}
-
-.task-card.item-type-goal {
-    position: relative;
-    border-radius: 4px;
-    padding: 10px 12px;
-}
-
-.task-card.item-type-goal::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: 4px;
-    pointer-events: none;
-    padding: 3px;
-    background: linear-gradient(135deg, #FFD700, #C9A64D);
-    -webkit-mask:
-        linear-gradient(#fff 0 0) content-box,
-        linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-}
-
-.task-name {
-    font-weight: 600;
-    font-size: 0.9em;
-    margin-bottom: 4px;
-    color: var(--text-normal);
-    padding-right: 50px;
-}
-
-.task-description {
-    font-size: 0.85em;
-    color: var(--text-muted);
-    white-space: pre-wrap;
-    word-wrap: break-word;
-}
-
-.task-delete-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    border: none;
-    background-color: rgba(255, 0, 0, 0.7);
-    color: white;
-    cursor: pointer;
-    font-size: 14px;
-    line-height: 1;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.task-card:hover .task-delete-btn {
-    opacity: 1;
-}
-
-.task-delete-btn:hover {
-    background-color: rgba(255, 0, 0, 0.9);
-}
-
-/* Modal Styling */
-.scheduler-modal {
-    padding: 20px;
-}
-
-.scheduler-modal-subtitle {
-    color: var(--text-muted);
-    font-size: 0.9em;
-    margin-bottom: 20px;
-}
-
-.modal-button-container {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-    justify-content: flex-end;
-}
-
-.modal-button-container button {
-    padding: 8px 16px;
-    border-radius: 4px;
-    border: 1px solid var(--background-modifier-border);
-    cursor: pointer;
-}
-
-/* Today Column Highlighting */
-.day-header.is-today {
-    background-color: var(--interactive-accent) !important;
-    color: white !important;
-    font-weight: 700;
-}
-
-.day-cell.is-today {
-    background-color: rgba(231, 76, 60, 0.08);
-}
-
-.day-cell.is-today:hover {
-    background-color: rgba(231, 76, 60, 0.15);
-}
-
-/* Monthly Trash Button */
 .trash-task-btn {
     width: 28px;
     height: 28px;
@@ -602,112 +754,203 @@
     transform: scale(1.1);
 }
 
-.notice {
-    white-space: pre-wrap;
-    max-width: 400px;
-    font-size: 0.9em;
-    line-height: 1.5;
-}
-
-.notice strong {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 1.05em;
-}
-
-.setting-item button.mod-warning {
-    background-color: rgba(231, 76, 60, 0.15);
-    color: #e74c3c;
-    border: 1px solid rgba(231, 76, 60, 0.3);
-}
-
-.setting-item button.mod-warning:hover {
-    background-color: #e74c3c;
-    color: white;
-    border-color: #e74c3c;
-}
-
-.days-selection,
-.hours-selection {
+/* Item action buttons (check, edit, delete, reorder) */
+.item-buttons,
+.task-buttons {
+    position: absolute;
+    top: 4px;
+    right: 4px;
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 20px;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
 }
 
-.day-toggle-btn,
-.hour-toggle-btn {
-    padding: 6px 12px;
-    border: 1px solid var(--background-modifier-border);
+.scheduler-item-card:hover .item-buttons,
+.task-card:hover .task-buttons {
+    opacity: 1;
+}
+
+.item-check-btn,
+.task-check-btn {
+    width: 20px;
+    height: 20px;
     border-radius: 4px;
-    background-color: var(--background-secondary);
-    color: var(--text-normal);
+    border: none;
+    background-color: rgba(46, 204, 113, 0.8);
+    color: white;
     cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.2s;
 }
 
-.day-toggle-btn:hover,
-.hour-toggle-btn:hover {
-    background-color: var(--background-modifier-hover);
+.item-check-btn:hover,
+.task-check-btn:hover {
+    background-color: rgba(46, 204, 113, 1);
+    transform: scale(1.1);
 }
 
-.day-toggle-btn.active,
-.hour-toggle-btn.active {
+.item-edit-btn,
+.task-edit-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background-color: rgba(52, 152, 219, 0.8);
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.item-edit-btn:hover,
+.task-edit-btn:hover {
+    background-color: rgba(52, 152, 219, 1);
+    transform: scale(1.1);
+}
+
+.item-delete-btn,
+.task-delete-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background-color: rgba(255, 0, 0, 0.7);
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.item-buttons .item-delete-btn,
+.task-buttons .task-delete-btn {
+    position: static;
+    width: 20px;
+    height: 20px;
+}
+
+.scheduler-item-card:hover .item-delete-btn,
+.task-card:hover .task-delete-btn {
+    opacity: 1;
+}
+
+.item-delete-btn:hover,
+.task-delete-btn:hover {
+    background-color: rgba(255, 0, 0, 0.9);
+}
+
+.task-reorder-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: none;
+    background-color: rgba(155, 89, 182, 0.8);
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.task-reorder-btn:hover {
+    background-color: rgba(155, 89, 182, 1);
+    transform: scale(1.1);
+}
+
+/* Header button group */
+.header-button-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.populate-btn {
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--interactive-accent);
+    background-color: rgba(52, 152, 219, 0.1);
+    color: var(--interactive-accent);
+    font-size: 0.8em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.populate-btn:hover {
     background-color: var(--interactive-accent);
     color: white;
-    border-color: var(--interactive-accent);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
 }
 
-/* Current Hour Highlighting - Only for TODAY */
-.day-cell.current-hour-cell,
-.time-cell.current-hour-cell {
-    background-color: rgba(231, 76, 60, 0.15) !important;
-    border: 2px solid rgba(231, 76, 60, 0.5);
+.clear-weekly-btn {
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 152, 0, 0.3);
+    background-color: rgba(255, 152, 0, 0.1);
+    color: #ff9800;
+    font-size: 0.8em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
 }
 
-.day-cell.current-hour-cell:hover {
-    background-color: rgba(231, 76, 60, 0.25) !important;
+.clear-weekly-btn:hover {
+    background-color: #ff9800;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
 }
 
-.time-cell.current-hour-label {
-    font-weight: 700;
+.clear-all-btn {
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    background-color: rgba(231, 76, 60, 0.1);
     color: #e74c3c;
+    font-size: 0.8em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
 }
 
-/* Weekly section header with navigation */
-.scheduler-section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+.clear-all-btn:hover {
+    background-color: #e74c3c;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
 }
 
-.scheduler-section-header h2 {
-    margin: 0;
-}
-
-.header-title-container {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-/* Week and Year Navigation */
-.week-navigation,
-.year-navigation {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.week-label,
-.year-label {
-    font-size: 0.95em;
-    color: var(--text-muted);
-    min-width: 200px;
-    text-align: center;
-    font-weight: 500;
-}
+/* ========================================
+   8. NAVIGATION
+   ======================================== */
 
 .nav-btn {
     padding: 6px 12px;
@@ -744,26 +987,145 @@
     transform: translateY(-1px);
 }
 
-.clear-weekly-btn {
-    padding: 8px 16px;
-    border-radius: 6px;
-    border: 1px solid rgba(231, 76, 60, 0.3);
-    background-color: rgba(231, 76, 60, 0.1);
-    color: #e74c3c;
-    font-size: 0.9em;
-    font-weight: 600;
+/* Day selection toggles */
+.days-selection,
+.hours-selection {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.day-toggle-btn,
+.hour-toggle-btn {
+    padding: 6px 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background-color: var(--background-secondary);
+    color: var(--text-normal);
     cursor: pointer;
     transition: all 0.2s;
 }
 
-.clear-weekly-btn:hover {
-    background-color: #e74c3c;
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+.day-toggle-btn:hover,
+.hour-toggle-btn:hover {
+    background-color: var(--background-modifier-hover);
 }
 
-/* Schedule Grid for Standard Tasks */
+.day-toggle-btn.active,
+.hour-toggle-btn.active {
+    background-color: var(--interactive-accent);
+    color: white;
+    border-color: var(--interactive-accent);
+}
+
+.sleep-days-selection {
+    display: flex;
+    gap: 8px;
+    margin: 12px 0;
+    flex-wrap: wrap;
+}
+
+.sleep-day-toggle-btn {
+    padding: 8px 16px;
+    border: 2px solid var(--interactive-accent);
+    border-radius: 6px;
+    background-color: var(--interactive-accent);
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.sleep-day-toggle-btn.excluded {
+    background-color: transparent;
+    color: var(--text-muted);
+    border-color: var(--background-modifier-border);
+}
+
+.sleep-day-toggle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================
+   9. MODALS & DIALOGS
+   ======================================== */
+
+.scheduler-modal {
+    padding: 20px;
+}
+
+.scheduler-modal-subtitle {
+    color: var(--text-muted);
+    font-size: 0.9em;
+    margin-bottom: 20px;
+}
+
+.modal-button-container {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-end;
+}
+
+.modal-button-container button {
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: 1px solid var(--background-modifier-border);
+    cursor: pointer;
+}
+
+.notice {
+    white-space: pre-wrap;
+    max-width: 400px;
+    font-size: 0.9em;
+    line-height: 1.5;
+}
+
+.notice strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 1.05em;
+}
+
+.standard-task-warning {
+    background-color: rgba(255, 152, 0, 0.1);
+    border-left: 4px solid #ff9800;
+    padding: 12px;
+    margin-bottom: 16px;
+    border-radius: 4px;
+}
+
+.standard-task-warning p {
+    margin: 0;
+    color: var(--text-normal);
+    font-size: 0.9em;
+}
+
+.edit-standard-task-modal {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.locked-category-display {
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.setting-item button.mod-warning {
+    background-color: rgba(231, 76, 60, 0.15);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.setting-item button.mod-warning:hover {
+    background-color: #e74c3c;
+    color: white;
+    border-color: #e74c3c;
+}
+
+/* Schedule grid for standard tasks */
 .schedule-grid-container {
     margin: 20px 0;
     border: 1px solid var(--background-modifier-border);
@@ -862,475 +1224,31 @@
     border-color: var(--interactive-accent);
 }
 
-.sleep-days-selection {
-    display: flex;
-    gap: 8px;
-    margin: 12px 0;
-    flex-wrap: wrap;
-}
+/* ========================================
+   10. MOBILE RESPONSIVE (≤ 1200px)
+   ======================================== */
 
-.sleep-day-toggle-btn {
-    padding: 8px 16px;
-    border: 2px solid var(--interactive-accent);
-    border-radius: 6px;
-    background-color: var(--interactive-accent);
-    color: white;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.2s;
-}
-
-.sleep-day-toggle-btn.excluded {
-    background-color: transparent;
-    color: var(--text-muted);
-    border-color: var(--background-modifier-border);
-}
-
-.sleep-day-toggle-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.item-buttons,
-.task-buttons {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    display: flex;
-    gap: 4px;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.scheduler-item-card:hover .item-buttons,
-.task-card:hover .task-buttons {
-    opacity: 1;
-}
-
-.item-check-btn,
-.task-check-btn {
-    width: 20px;
-    height: 20px;
-    border-radius: 4px;
-    border: none;
-    background-color: rgba(46, 204, 113, 0.8);
-    color: white;
-    cursor: pointer;
-    font-size: 14px;
-    line-height: 1;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-}
-
-.item-check-btn:hover,
-.task-check-btn:hover {
-    background-color: rgba(46, 204, 113, 1);
-    transform: scale(1.1);
-}
-
-.item-edit-btn,
-.task-edit-btn {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: none;
-    background-color: rgba(52, 152, 219, 0.8);
-    color: white;
-    cursor: pointer;
-    font-size: 14px;
-    line-height: 1;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-}
-
-.item-edit-btn:hover,
-.task-edit-btn:hover {
-    background-color: rgba(52, 152, 219, 1);
-    transform: scale(1.1);
-}
-
-.task-reorder-btn {
-    width: 20px;
-    height: 20px;
-    border-radius: 4px;
-    border: none;
-    background-color: rgba(155, 89, 182, 0.8);
-    color: white;
-    cursor: pointer;
-    font-size: 12px;
-    line-height: 1;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-}
-
-.task-reorder-btn:hover {
-    background-color: rgba(155, 89, 182, 1);
-    transform: scale(1.1);
-}
-
-.locked-category-display {
-    font-weight: 600;
-    color: var(--text-normal);
-}
-
-.item-buttons .item-delete-btn,
-.task-buttons .task-delete-btn {
-    position: static;
-    width: 20px;
-    height: 20px;
-}
-
-.header-button-group {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-}
-
-/* Populate button - more compact */
-.populate-btn {
-    padding: 6px 10px; /* ✅ Reduced from 8px 16px */
-    border-radius: 4px;
-    border: 1px solid var(--interactive-accent);
-    background-color: rgba(52, 152, 219, 0.1);
-    color: var(--interactive-accent);
-    font-size: 0.8em; /* ✅ Reduced from 0.9em */
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap; /* ✅ Prevent text wrapping inside button */
-}
-
-.populate-btn:hover {
-    background-color: var(--interactive-accent);
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
-}
-
-/* Clear buttons - more compact */
-.clear-weekly-btn {
-    padding: 6px 10px; /* ✅ Reduced from 8px 16px */
-    border-radius: 4px;
-    border: 1px solid rgba(255, 152, 0, 0.3);
-    background-color: rgba(255, 152, 0, 0.1);
-    color: #ff9800;
-    font-size: 0.8em; /* ✅ Reduced from 0.9em */
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-}
-
-.clear-weekly-btn:hover {
-    background-color: #ff9800;
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
-}
-
-.clear-all-btn {
-    padding: 6px 10px; /* ✅ Reduced from 8px 16px */
-    border-radius: 4px;
-    border: 1px solid rgba(231, 76, 60, 0.3);
-    background-color: rgba(231, 76, 60, 0.1);
-    color: #e74c3c;
-    font-size: 0.8em; /* ✅ Reduced from 0.9em */
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-}
-
-.clear-all-btn:hover {
-    background-color: #e74c3c;
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
-}
-
-/* Optional: Even more compact on very small screens */
 @media (max-width: 1400px) {
     .header-button-group {
-        gap: 4px; /* ✅ Tighter spacing */
+        gap: 4px;
     }
     
     .populate-btn,
     .clear-weekly-btn,
     .clear-all-btn {
-        padding: 5px 8px; /* ✅ Even smaller */
-        font-size: 0.75em; /* ✅ Even tinier text */
+        padding: 5px 8px;
+        font-size: 0.75em;
     }
 }
 
-.standard-task-warning {
-    background-color: rgba(255, 152, 0, 0.1);
-    border-left: 4px solid #ff9800;
-    padding: 12px;
-    margin-bottom: 16px;
-    border-radius: 4px;
-}
-
-.standard-task-warning p {
-    margin: 0;
-    color: var(--text-normal);
-    font-size: 0.9em;
-}
-
-.edit-standard-task-modal {
-    max-height: 80vh;
-    overflow-y: auto;
-}
-
-/* === FORCE DESKTOP WIDTH ON MOBILE === */
-.scheduler-monthly-section,
-.monthly-grid,
-.monthly-row {
-    min-width: 1600px !important;
-}
-
-/* ========== GENERAL GOALS SECTION ========== */
-.scheduler-goals-section {
-    margin-top: 40px;
-}
-
-.scheduler-goals-section h2 {
-    margin-bottom: 20px;
-    color: var(--text-normal);
-}
-
-.goals-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.goals-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-}
-
-.goals-category-column {
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 8px;
-    padding: 12px;
-    background-color: var(--background-secondary);
-    min-height: 200px;
-}
-
-.goals-category-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid var(--background-modifier-border);
-    width: 100%;
-}
-
-.goals-category-header h3 {
-    margin: 0;
-    font-size: 1.1em;
-    color: var(--text-normal);
-    flex-grow: 1;
-}
-
-.goals-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-/* DARK THEME — Improve readability for GOALS */
-.theme-dark .item-type-goal .item-name,
-.theme-dark .item-type-goal .item-description,
-.theme-dark .task-card.item-type-goal .task-name,
-.theme-dark .task-card.item-type-goal .task-description {
-    color: #ffffff !important;
-}
-
-/* DARK THEME — Improve readability for TASKS */
-.theme-dark .item-type-task .item-name,
-.theme-dark .item-type-task .item-description,
-.theme-dark .task-card.item-type-task .task-name,
-.theme-dark .task-card.item-type-task .task-description {
-    color: #ffffff !important;
-}
-
-/* DARK THEME — Improve readability for TASKS */
-.theme-dark .item-type-task .item-name,
-.theme-dark .item-type-task .item-description,
-.theme-dark .task-card.item-type-task .task-name,
-.theme-dark .task-card.item-type-task .task-description {
-    color: #ffffff !important;
-}
-
-/* ========== COLLAPSIBLE SIDEBAR LAYOUT ========== */
-
-/* Main container - no flexbox, just normal flow */
-.scheduler-container {
-    padding: 20px;
-    padding-right: 0; /* ✅ No right padding - sidebar handles it */
-    height: 100%;
-    background-color: var(--background-primary);
-    overflow: auto;
-    position: relative;
-}
-
-/* Main content area - normal flow */
-.scheduler-main {
-    min-width: 1400px;
-    margin-right: 360px; /* ✅ Space for expanded sidebar */
-    transition: margin-right 0.3s ease;
-}
-
-/* When sidebar is collapsed, no margin needed */
-.scheduler-backlog-section.backlog-collapsed ~ .scheduler-main {
-    margin-right: 60px; /* ✅ Space for collapsed sidebar */
-}
-
-/* Backlog sidebar - OVERLAYS content */
-.scheduler-backlog-section {
-    position: fixed;
-    right: 0;
-    top: 0;
-    height: 100vh;
-    background-color: var(--background-secondary);
-    border-left: 2px solid var(--background-modifier-border);
-    padding: 20px;
-    overflow-y: auto;
-    z-index: 10; /* ✅ Above content */
-    transition: width 0.3s ease, transform 0.3s ease;
-}
-
-/* Expanded state */
-.scheduler-backlog-section.backlog-expanded {
-    width: 340px;
-    transform: translateX(0);
-}
-
-/* Collapsed state */
-.scheduler-backlog-section.backlog-collapsed {
-    width: 60px;
-    padding: 20px 10px;
-}
-
-/* Collapsed state - hide content */
-.scheduler-backlog-section.backlog-collapsed .backlog-list,
-.scheduler-backlog-section.backlog-collapsed h3,
-.scheduler-backlog-section.backlog-collapsed .backlog-header-buttons {
-    display: none;
-}
-
-/* Toggle button */
-.backlog-toggle-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    border: none;
-    background-color: var(--interactive-accent);
-    color: white;
-    font-size: 18px;
-    font-weight: bold;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    margin-bottom: 12px;
-}
-
-.backlog-toggle-btn:hover {
-    background-color: var(--interactive-accent-hover);
-    transform: scale(1.1);
-}
-
-/* Expanded - toggle button in header */
-.scheduler-backlog-section.backlog-expanded .backlog-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid var(--background-modifier-border);
-}
-
-.scheduler-backlog-section.backlog-expanded .backlog-toggle-btn {
-    order: -1; /* ✅ Toggle button first */
-    margin-bottom: 0;
-    margin-right: 12px;
-}
-
-/* Collapsed - toggle button centered */
-.scheduler-backlog-section.backlog-collapsed .backlog-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
-}
-
-.scheduler-backlog-section.backlog-collapsed .backlog-toggle-btn {
-    margin-bottom: 0;
-}
-
-.backlog-header h3 {
-    margin: 0;
-    font-size: 1.1em;
-    color: var(--text-normal);
-    flex: 1;
-}
-
-.backlog-header-buttons {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-}
-
-.backlog-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 16px;
-}
-
-.backlog-empty {
-    text-align: center;
-    color: var(--text-muted);
-    padding: 20px 0;
-    font-style: italic;
-}
-
-/* Light theme */
-.theme-light .scheduler-backlog-section {
-    border-left-color: rgba(0, 0, 0, 0.2);
-    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
-}
-
-/* Dark theme */
-.theme-dark .scheduler-backlog-section {
-    border-left-color: rgba(255, 255, 255, 0.15);
-    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.5);
-}
-
-/* ========== MOBILE: SIDEBAR AT BOTTOM ========== */
 @media (max-width: 1200px) {
+    /* Main content adjustments */
     .scheduler-main {
         margin-right: 0;
-        margin-bottom: 60px; /* ✅ Space for collapsed sidebar */
+        margin-bottom: 60px;
     }
     
+    /* Backlog becomes bottom drawer */
     .scheduler-backlog-section {
         position: fixed;
         bottom: 0;
@@ -1366,90 +1284,26 @@
     .theme-dark .scheduler-backlog-section {
         box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5);
     }
-}
-
-
-
-/* ===== MOBILE FIX: buttons below text, always visible ===== */
-@media (max-width: 1200px) {
-
-    /* normal padding again, no reserve space on the right */
+    
+    /* Item buttons always visible on mobile */
     .scheduler-item-card,
     .task-card {
         padding-right: 12px;
     }
-
-    /* buttons are part of the layout, below the text */
+    
     .item-buttons,
     .task-buttons {
-        position: static;          /* no absolute positioning */
-        top: auto;
-        right: auto;
-        margin-top: 6px;
-        align-self: flex-end;
-
-        display: flex;
-        gap: 8px;
-        opacity: 1 !important;     /* always visible */
-        pointer-events: auto;
-    }
-
-    .item-check-btn,
-    .task-check-btn,
-    .item-edit-btn,
-    .task-edit-btn,
-    .item-delete-btn,
-    .task-delete-btn,
-    .task-reorder-btn {
-        width: 32px !important;
-        height: 32px !important;
-        font-size: 16px !important;
-        border-radius: 6px !important;
-    }
-
-    /* specifically ensure delete is visible */
-    .item-delete-btn,
-    .task-delete-btn {
-        opacity: 1 !important;
-    }
-
-    /* Mobile: make backlog non-fixed */
-    .scheduler-backlog-section {
         position: static;
-        width: 100%;
-        margin-top: 40px;
-        max-height: none;
-    }
-    
-    .scheduler-main {
-        padding-right: 0;
-    }
-}
-
-/* ===== MOBILE FIX: buttons below text, always visible ===== */
-@media (max-width: 1200px) {
-
-    /* normal padding again, no reserve space on the right */
-    .scheduler-item-card,
-    .task-card {
-        padding-right: 12px;
-    }
-
-    /* buttons are part of the layout, below the text */
-    .item-buttons,
-    .task-buttons {
-        position: static;          /* no absolute positioning */
         top: auto;
         right: auto;
         margin-top: 6px;
         align-self: flex-end;
-
         display: flex;
         gap: 8px;
-        opacity: 1 !important;     /* always visible */
+        opacity: 1 !important;
         pointer-events: auto;
     }
-
+    
     .item-check-btn,
     .task-check-btn,
     .item-edit-btn,
@@ -1462,12 +1316,20 @@
         font-size: 16px !important;
         border-radius: 6px !important;
     }
-
-    /* specifically ensure delete is visible */
+    
     .item-delete-btn,
     .task-delete-btn {
         opacity: 1 !important;
     }
-
-    
 }
+
+/* Force desktop width for scrolling on mobile */
+.scheduler-monthly-section,
+.monthly-grid,
+.monthly-row {
+    min-width: 1600px !important;
+}
+
+/* ========================================
+   END OF STYLESHEET
+   ======================================== */
