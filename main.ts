@@ -43,7 +43,7 @@ export default class SchedulerPlugin extends Plugin {
     settings: SchedulerSettings;
     private backlogItems: SchedulerItem[] = [];
     private generalGoals: SchedulerItem[] = [];
-    private dataLoaded: boolean = false;
+    public dataLoaded: boolean = false;
 
     currentWeek: number;
     currentYear: number;

@@ -29,6 +29,8 @@ export class SchedulerView extends ItemView {
     }
 
     async onOpen() {
+        // Force reload every time view opens
+        this.plugin.dataLoaded = false;
         await this.plugin.ensureDataLoaded();
 
         const container = this.containerEl.children[1];
