@@ -29,6 +29,8 @@ export class SchedulerView extends ItemView {
     }
 
     async onOpen() {
+        await this.plugin.ensureDataLoaded();
+
         const container = this.containerEl.children[1];
         container.empty();
         container.addClass('scheduler-container');

@@ -46,16 +46,13 @@ export default class SchedulerPlugin extends Plugin {
     private generalGoals: SchedulerItem[] = [];
     private lastNotifiedHour: number = -1;
     private notificationInterval: number | null = null;
+    private dataLoaded: boolean = false;
 
     currentWeek: number;
     currentYear: number;
     currentYearData: YearData | null = null;
 
     async onload() {
-        await this.loadSettings();
-        await this.loadBacklog();
-        await this.loadGoals();
-
         const { weekNumber, year } = DateUtils.getCurrentWeekInfo();
         this.currentWeek = weekNumber;
         this.currentYear = year;
@@ -105,8 +102,6 @@ export default class SchedulerPlugin extends Plugin {
         });
 
         this.addSettingTab(new SchedulerSettingTab(this.app, this));
-
-        await this.loadYearData(this.currentYear);
 
         if (this.settings.showNotifications) {
             this.startNotificationChecker();
@@ -159,15 +154,30 @@ export default class SchedulerPlugin extends Plugin {
         }
     }
 
+    async ensureDataLoaded(): Promise<void> {
+        if (this.dataLoaded) return;
+        
+        // Small delay to let sync catch up (optional but helps)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        await this.loadSettings();
+        await this.loadBacklog();
+        await this.loadGoals();
+        await this.loadYearData(this.currentYear);
+        
+        this.dataLoaded = true;
+        
+        // Start notifications after data loaded
+        if (this.settings.showNotifications) {
+            this.startNotificationChecker();
+        }
+    }
+
     // ========== SETTINGS ==========
 
     async loadSettings() {
         const loaded = await this.atomicRead(SETTINGS_FILE);
         this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded);
-
-        if (!loaded) {
-            await this.saveSettings();
-        }
     }
 
     async saveSettings() {
