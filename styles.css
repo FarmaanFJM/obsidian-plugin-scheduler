@@ -1,17 +1,3 @@
-/* Main Scheduler Container */
-.scheduler-container {
-    padding: 20px;
-    height: 100%;
-    background-color: var(--background-primary);
-    overflow: auto;
-    /* ⬅ horizontal + vertical scroll here */
-}
-
-/* Force a "desktop" width that never shrinks */
-.scheduler-main {
-    min-width: 1400px;
-}
-
 /* Weekly Scheduler Section */
 .scheduler-weekly-section {
     margin-bottom: 40px;
@@ -1189,23 +1175,88 @@
     color: #ffffff !important;
 }
 
-/* ========== BACKLOG SECTION ========== */
-.scheduler-backlog-section {
-    position: fixed;
-    right: 20px;
-    top: 80px;
-    width: 320px;
-    max-height: calc(100vh - 120px);
-    background-color: var(--background-secondary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 8px;
-    padding: 16px;
-    overflow-y: auto;
-    z-index: 5;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+/* ========== COLLAPSIBLE SIDEBAR LAYOUT ========== */
+
+/* Main container - no flexbox, just normal flow */
+.scheduler-container {
+    padding: 20px;
+    padding-right: 0; /* ✅ No right padding - sidebar handles it */
+    height: 100%;
+    background-color: var(--background-primary);
+    overflow: auto;
+    position: relative;
 }
 
-.backlog-header {
+/* Main content area - normal flow */
+.scheduler-main {
+    min-width: 1400px;
+    margin-right: 360px; /* ✅ Space for expanded sidebar */
+    transition: margin-right 0.3s ease;
+}
+
+/* When sidebar is collapsed, no margin needed */
+.scheduler-backlog-section.backlog-collapsed ~ .scheduler-main {
+    margin-right: 60px; /* ✅ Space for collapsed sidebar */
+}
+
+/* Backlog sidebar - OVERLAYS content */
+.scheduler-backlog-section {
+    position: fixed;
+    right: 0;
+    top: 0;
+    height: 100vh;
+    background-color: var(--background-secondary);
+    border-left: 2px solid var(--background-modifier-border);
+    padding: 20px;
+    overflow-y: auto;
+    z-index: 10; /* ✅ Above content */
+    transition: width 0.3s ease, transform 0.3s ease;
+}
+
+/* Expanded state */
+.scheduler-backlog-section.backlog-expanded {
+    width: 340px;
+    transform: translateX(0);
+}
+
+/* Collapsed state */
+.scheduler-backlog-section.backlog-collapsed {
+    width: 60px;
+    padding: 20px 10px;
+}
+
+/* Collapsed state - hide content */
+.scheduler-backlog-section.backlog-collapsed .backlog-list,
+.scheduler-backlog-section.backlog-collapsed h3,
+.scheduler-backlog-section.backlog-collapsed .backlog-header-buttons {
+    display: none;
+}
+
+/* Toggle button */
+.backlog-toggle-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    background-color: var(--interactive-accent);
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    margin-bottom: 12px;
+}
+
+.backlog-toggle-btn:hover {
+    background-color: var(--interactive-accent-hover);
+    transform: scale(1.1);
+}
+
+/* Expanded - toggle button in header */
+.scheduler-backlog-section.backlog-expanded .backlog-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1214,10 +1265,31 @@
     border-bottom: 2px solid var(--background-modifier-border);
 }
 
+.scheduler-backlog-section.backlog-expanded .backlog-toggle-btn {
+    order: -1; /* ✅ Toggle button first */
+    margin-bottom: 0;
+    margin-right: 12px;
+}
+
+/* Collapsed - toggle button centered */
+.scheduler-backlog-section.backlog-collapsed .backlog-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.scheduler-backlog-section.backlog-collapsed .backlog-toggle-btn {
+    margin-bottom: 0;
+}
+
 .backlog-header h3 {
     margin: 0;
     font-size: 1.1em;
     color: var(--text-normal);
+    flex: 1;
 }
 
 .backlog-header-buttons {
@@ -1230,6 +1302,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    margin-top: 16px;
 }
 
 .backlog-empty {
@@ -1239,23 +1312,62 @@
     font-style: italic;
 }
 
-/* Make main content have right padding to avoid overlap */
-.scheduler-main {
-    min-width: 1400px;
-    padding-right: 360px; /* Space for fixed backlog */
-}
-
-/* Light theme - dark border for contrast */
+/* Light theme */
 .theme-light .scheduler-backlog-section {
-    border: 2px solid rgba(0, 0, 0, 0.2);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-left-color: rgba(0, 0, 0, 0.2);
+    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Dark theme - light border for contrast */
+/* Dark theme */
 .theme-dark .scheduler-backlog-section {
-    border: 2px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    border-left-color: rgba(255, 255, 255, 0.15);
+    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.5);
 }
+
+/* ========== MOBILE: SIDEBAR AT BOTTOM ========== */
+@media (max-width: 1200px) {
+    .scheduler-main {
+        margin-right: 0;
+        margin-bottom: 60px; /* ✅ Space for collapsed sidebar */
+    }
+    
+    .scheduler-backlog-section {
+        position: fixed;
+        bottom: 0;
+        top: auto;
+        left: 0;
+        right: 0;
+        height: auto;
+        width: 100% !important;
+        max-height: 80vh;
+        border-left: none;
+        border-top: 2px solid var(--background-modifier-border);
+    }
+    
+    .scheduler-backlog-section.backlog-expanded {
+        transform: translateY(0);
+    }
+    
+    .scheduler-backlog-section.backlog-collapsed {
+        height: 60px;
+        max-height: 60px;
+        padding: 10px 20px;
+    }
+    
+    .scheduler-backlog-section.backlog-collapsed .backlog-header {
+        flex-direction: row;
+        justify-content: center;
+    }
+    
+    .theme-light .scheduler-backlog-section {
+        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .theme-dark .scheduler-backlog-section {
+        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5);
+    }
+}
+
 
 
 /* ===== MOBILE FIX: buttons below text, always visible ===== */

@@ -287,67 +287,91 @@ export class SchedulerView extends ItemView {
     // ========== BACKLOG RENDERING ==========
 
     renderBacklog(container: Element) {
-        const backlogHeader = container.createDiv({ cls: 'backlog-header' });
-        backlogHeader.createEl('h3', { text: 'To-Do Backlog' });
-
-        // Create button container
-        const buttonContainer = backlogHeader.createDiv({ cls: 'backlog-header-buttons' });
-
-        const addBtn = buttonContainer.createEl('button', {
-            cls: 'add-task-btn',
-            text: '+'
-        });
-        addBtn.addEventListener('click', () => {
-            this.openAddBacklogItemModal();
-        });
-
-        const trashBtn = buttonContainer.createEl('button', {
-            cls: 'trash-task-btn',
-            text: '🗑️'
-        });
-        trashBtn.addEventListener('click', () => {
-            const confirmed = confirm('Clear all backlog items?');
-            if (confirmed) {
-                this.plugin.clearBacklogItems();
-            }
-        });
-
-        const backlogList = container.createDiv({ cls: 'backlog-list' });
-        const allItems = this.plugin.getBacklogItems();
-
-        if (allItems.length === 0) {
-            backlogList.createDiv({
-                cls: 'backlog-empty',
-                text: 'No items in backlog'
-            });
+        // Add collapsed/expanded class
+        if (this.plugin.settings.backlogExpanded) {
+            container.addClass('backlog-expanded');
         } else {
-            // Group backlog items by category
-            const itemsByCategory: Record<string, SchedulerItem[]> = {};
+            container.addClass('backlog-collapsed');
+        }
 
-            this.plugin.settings.categories.forEach(cat => {
-                itemsByCategory[cat.id] = [];
+        const backlogHeader = container.createDiv({ cls: 'backlog-header' });
+
+        // Toggle button (always visible)
+        const toggleBtn = backlogHeader.createEl('button', {
+            cls: 'backlog-toggle-btn',
+            text: this.plugin.settings.backlogExpanded ? '→' : '←'
+        });
+        toggleBtn.setAttribute('aria-label', this.plugin.settings.backlogExpanded ? 'Collapse sidebar' : 'Expand sidebar');
+        toggleBtn.addEventListener('click', () => {
+            this.plugin.toggleBacklogSidebar();
+        });
+
+        // Only show title and buttons when expanded
+        if (this.plugin.settings.backlogExpanded) {
+            backlogHeader.createEl('h3', { text: 'To-Do Backlog' });
+
+            // Create button container
+            const buttonContainer = backlogHeader.createDiv({ cls: 'backlog-header-buttons' });
+
+            const addBtn = buttonContainer.createEl('button', {
+                cls: 'add-task-btn',
+                text: '+'
+            });
+            addBtn.addEventListener('click', () => {
+                this.openAddBacklogItemModal();
             });
 
-            allItems.forEach(item => {
-                if (itemsByCategory[item.categoryId]) {
-                    itemsByCategory[item.categoryId].push(item);
+            const trashBtn = buttonContainer.createEl('button', {
+                cls: 'trash-task-btn',
+                text: '🗑️'
+            });
+            trashBtn.addEventListener('click', () => {
+                const confirmed = confirm('Clear all backlog items?');
+                if (confirmed) {
+                    this.plugin.clearBacklogItems();
                 }
             });
+        }
 
-            // Render each category that has items
-            this.plugin.settings.categories.forEach(category => {
-                const items = itemsByCategory[category.id];
-                if (items.length === 0) return;
+        // Only render list when expanded
+        if (this.plugin.settings.backlogExpanded) {
+            const backlogList = container.createDiv({ cls: 'backlog-list' });
+            const allItems = this.plugin.getBacklogItems();
 
-                // Category divider
-                const header = backlogList.createDiv({ cls: 'monthly-type-header' });
-                header.setText(`──────── ${category.name.toUpperCase()} ────────`);
-
-                // Render items in this category
-                items.forEach((item, index) => {
-                    this.renderBacklogItemCard(backlogList, item, index, items.length, category.id);
+            if (allItems.length === 0) {
+                backlogList.createDiv({
+                    cls: 'backlog-empty',
+                    text: 'No items in backlog'
                 });
-            });
+            } else {
+                // Group backlog items by category
+                const itemsByCategory: Record<string, SchedulerItem[]> = {};
+
+                this.plugin.settings.categories.forEach(cat => {
+                    itemsByCategory[cat.id] = [];
+                });
+
+                allItems.forEach(item => {
+                    if (itemsByCategory[item.categoryId]) {
+                        itemsByCategory[item.categoryId].push(item);
+                    }
+                });
+
+                // Render each category that has items
+                this.plugin.settings.categories.forEach(category => {
+                    const items = itemsByCategory[category.id];
+                    if (items.length === 0) return;
+
+                    // Category divider
+                    const header = backlogList.createDiv({ cls: 'monthly-type-header' });
+                    header.setText(`──────── ${category.name.toUpperCase()} ────────`);
+
+                    // Render items in this category
+                    items.forEach((item, index) => {
+                        this.renderBacklogItemCard(backlogList, item, index, items.length, category.id);
+                    });
+                });
+            }
         }
     }
 

@@ -37,6 +37,7 @@ const DEFAULT_SETTINGS: SchedulerSettings = {
         excludeWakeDays: [],
         excludeSleepDays: []
     },
+    backlogExpanded: true,
 };
 
 export default class SchedulerPlugin extends Plugin {
@@ -44,7 +45,6 @@ export default class SchedulerPlugin extends Plugin {
     private backlogItems: SchedulerItem[] = [];
     private generalGoals: SchedulerItem[] = [];
     public dataLoaded: boolean = false;
-
     currentWeek: number;
     currentYear: number;
     currentYearData: YearData | null = null;
@@ -173,6 +173,12 @@ export default class SchedulerPlugin extends Plugin {
     }
 
     // ========== BACKLOG ==========
+
+    async toggleBacklogSidebar() {
+        this.settings.backlogExpanded = !this.settings.backlogExpanded;
+        await this.saveSettings();
+        this.refreshView();
+    }
 
     async loadBacklog() {
         const data = await this.atomicRead(BACKLOG_FILE);

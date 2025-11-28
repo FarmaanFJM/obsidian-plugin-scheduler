@@ -5,6 +5,7 @@ export interface SchedulerSettings {
     categories: CategoryConfig[];
     standardItems: StandardItemConfig[];
     sleepSchedule: SleepSchedule;
+    backlogExpanded: boolean;
 }
 
 export interface BacklogData {
