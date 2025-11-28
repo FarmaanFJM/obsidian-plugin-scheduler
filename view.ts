@@ -1013,7 +1013,8 @@ export class SchedulerView extends ItemView {
                 this.plugin.addGeneralGoal(goalItem);
             },
             {
-                lockedCategoryId: categoryId // Lock the category if provided
+                lockedCategoryId: categoryId, // Lock the category if provided
+                lockedItemType: 'goal' // ✅ Lock the type to 'goal'
             }
         );
         modal.open();

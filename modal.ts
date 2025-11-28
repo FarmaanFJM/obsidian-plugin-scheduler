@@ -22,13 +22,16 @@ export class AddItemModal extends Modal {
 
     // Locked category (for general goals)
     private lockedCategoryId?: string;
+    
+    // Locked item type (for general goals)
+    private lockedItemType?: ItemType;
 
     constructor(
         app: App,
         categories: CategoryConfig[],
         title: string,
         onSubmit: (item: Omit<SchedulerItem, 'id'>) => void,
-        options?: { monthIndex?: number; year?: number; lockedCategoryId?: string }
+        options?: { monthIndex?: number; year?: number; lockedCategoryId?: string; lockedItemType?: ItemType }
     ) {
         super(app);
         this.categories = categories;
@@ -37,6 +40,12 @@ export class AddItemModal extends Modal {
 
         // Locked category support
         this.lockedCategoryId = options?.lockedCategoryId;
+        
+        // Locked item type support
+        this.lockedItemType = options?.lockedItemType;
+        if (this.lockedItemType) {
+            this.selectedItemType = this.lockedItemType;
+        }
 
         // Set default category (locked or first)
         if (this.lockedCategoryId) {
@@ -90,11 +99,24 @@ export class AddItemModal extends Modal {
                 text.inputEl.style.width = '100%';
             });
 
-        // Item Type dropdown
-        new Setting(contentEl)
+        // Item Type dropdown (locked or editable)
+        const typeSetting = new Setting(contentEl)
             .setName('Type')
-            .setDesc('Item type affects visual appearance')
-            .addDropdown(dropdown => {
+            .setDesc(this.lockedItemType ? 'Item type (locked)' : 'Item type affects visual appearance');
+
+        if (this.lockedItemType) {
+            // Show locked type as text
+            const typeText = contentEl.createDiv({ cls: 'locked-category-display' });
+            const typeLabel = this.lockedItemType.charAt(0).toUpperCase() + this.lockedItemType.slice(1);
+            typeText.setText(typeLabel);
+            typeText.style.padding = '8px 12px';
+            typeText.style.backgroundColor = 'var(--background-secondary)';
+            typeText.style.borderRadius = '4px';
+            typeText.style.marginTop = '8px';
+            typeSetting.controlEl.appendChild(typeText);
+        } else {
+            // Show dropdown
+            typeSetting.addDropdown(dropdown => {
                 dropdown.addOption('regular', 'Regular');
                 dropdown.addOption('task', 'Task (with checkbox)');
                 dropdown.addOption('goal', 'Goal');
@@ -106,6 +128,7 @@ export class AddItemModal extends Modal {
                         this.updateDeadlineFieldsVisibility();
                     });
             });
+        }
 
         // Category dropdown (locked or editable)
         const categorySetting = new Setting(contentEl)
