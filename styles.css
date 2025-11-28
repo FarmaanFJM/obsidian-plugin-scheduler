@@ -1331,5 +1331,102 @@
 }
 
 /* ========================================
+   MOBILE MODAL FIX - Edit Standard Task
+   ======================================== */
+
+/* Fix modal scrolling on mobile */
+@media (max-width: 1200px) {
+    .edit-standard-task-modal {
+        max-height: 85vh !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    }
+    
+    /* Ensure schedule grid is visible and scrollable */
+    .schedule-grid-container {
+        max-height: none !important; /* Remove height restriction */
+        overflow-y: visible !important; /* Don't scroll within container */
+        margin: 20px 0;
+    }
+    
+    /* Make grid cells bigger and easier to tap */
+    .schedule-grid-cell {
+        min-height: 40px !important; /* Bigger tap targets */
+        min-width: 40px !important;
+    }
+    
+    /* Time labels more readable */
+    .schedule-time-label {
+        font-size: 0.8em !important;
+        padding: 12px 4px !important;
+    }
+    
+    /* Day headers more readable */
+    .schedule-day-header {
+        font-size: 0.9em !important;
+        padding: 12px 4px !important;
+    }
+    
+    /* Make the grid fit better on small screens */
+    .schedule-grid {
+        width: 100%;
+        overflow-x: auto; /* Allow horizontal scroll if needed */
+    }
+    
+    /* Quick select buttons stack better */
+    .quick-select-buttons {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .quick-select-buttons button {
+        min-width: 80px; /* Easier to tap */
+        padding: 8px 12px !important;
+        font-size: 0.9em !important;
+    }
+}
+
+/* Additional fix for modal backdrop on mobile */
+@media (max-width: 1200px) {
+    /* Ensure modal content is touchable */
+    .modal-content {
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* Prevent body scroll when modal is open */
+    body.modal-open {
+        overflow: hidden;
+        position: fixed;
+        width: 100%;
+    }
+    
+    /* Make modal buttons easier to tap */
+    .modal-button-container button {
+        padding: 12px 20px !important;
+        font-size: 1em !important;
+        min-width: 100px;
+    }
+}
+
+/* Fix for textarea in modal on mobile */
+@media (max-width: 1200px) {
+    .scheduler-modal textarea,
+    .scheduler-modal input[type="text"] {
+        font-size: 16px !important; /* Prevent iOS zoom on focus */
+        padding: 12px !important;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    /* Category dropdown easier to tap */
+    .scheduler-modal select {
+        font-size: 16px !important;
+        padding: 12px !important;
+        width: 100%;
+    }
+}
+
+/* ========================================
    END OF STYLESHEET
    ======================================== */
