@@ -1005,23 +1005,25 @@
 
 .header-button-group {
     display: flex;
-    gap: 8px;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
-.refresh-btn,
+/* Populate button - more compact */
 .populate-btn {
-    padding: 8px 16px;
-    border-radius: 6px;
+    padding: 6px 10px; /* ✅ Reduced from 8px 16px */
+    border-radius: 4px;
     border: 1px solid var(--interactive-accent);
     background-color: rgba(52, 152, 219, 0.1);
     color: var(--interactive-accent);
-    font-size: 0.9em;
+    font-size: 0.8em; /* ✅ Reduced from 0.9em */
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    white-space: nowrap; /* ✅ Prevent text wrapping inside button */
 }
 
-.refresh-btn:hover,
 .populate-btn:hover {
     background-color: var(--interactive-accent);
     color: white;
@@ -1029,16 +1031,18 @@
     box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
 }
 
+/* Clear buttons - more compact */
 .clear-weekly-btn {
-    padding: 8px 16px;
-    border-radius: 6px;
+    padding: 6px 10px; /* ✅ Reduced from 8px 16px */
+    border-radius: 4px;
     border: 1px solid rgba(255, 152, 0, 0.3);
     background-color: rgba(255, 152, 0, 0.1);
     color: #ff9800;
-    font-size: 0.9em;
+    font-size: 0.8em; /* ✅ Reduced from 0.9em */
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    white-space: nowrap;
 }
 
 .clear-weekly-btn:hover {
@@ -1049,15 +1053,16 @@
 }
 
 .clear-all-btn {
-    padding: 8px 16px;
-    border-radius: 6px;
+    padding: 6px 10px; /* ✅ Reduced from 8px 16px */
+    border-radius: 4px;
     border: 1px solid rgba(231, 76, 60, 0.3);
     background-color: rgba(231, 76, 60, 0.1);
     color: #e74c3c;
-    font-size: 0.9em;
+    font-size: 0.8em; /* ✅ Reduced from 0.9em */
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    white-space: nowrap;
 }
 
 .clear-all-btn:hover {
@@ -1065,6 +1070,20 @@
     color: white;
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+/* Optional: Even more compact on very small screens */
+@media (max-width: 1400px) {
+    .header-button-group {
+        gap: 4px; /* ✅ Tighter spacing */
+    }
+    
+    .populate-btn,
+    .clear-weekly-btn,
+    .clear-all-btn {
+        padding: 5px 8px; /* ✅ Even smaller */
+        font-size: 0.75em; /* ✅ Even tinier text */
+    }
 }
 
 .standard-task-warning {

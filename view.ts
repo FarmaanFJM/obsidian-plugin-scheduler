@@ -147,16 +147,6 @@ export class SchedulerView extends ItemView {
 
         const buttonGroup = weeklyHeader.createDiv({ cls: 'header-button-group' });
 
-        // Refresh button
-        const refreshBtn = buttonGroup.createEl('button', {
-            cls: 'refresh-btn',
-            text: 'Refresh'
-        });
-        refreshBtn.addEventListener('click', () => {
-            this.refresh();
-            new Notice('Scheduler refreshed!');
-        });
-
         // Populate Tasks button
         const populateBtn = buttonGroup.createEl('button', {
             cls: 'populate-btn',
