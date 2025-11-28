@@ -221,20 +221,6 @@ export class SchedulerSettingTab extends PluginSettingTab {
 
         // Notifications Section
         containerEl.createEl('h3', { text: 'Notifications' });
-
-        new Setting(containerEl)
-            .setName('Show Hourly Notifications')
-            .setDesc('Display a notification at the start of each hour with your scheduled tasks')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.showNotifications)
-                .onChange(async (value) => {
-                    this.plugin.settings.showNotifications = value;
-                    await this.plugin.saveSettings();
-
-                    if (value) {
-                        this.plugin.startNotificationChecker();
-                    }
-                }));
     }
 
     private createCategorySetting(containerEl: HTMLElement, category: CategoryConfig, index: number) {

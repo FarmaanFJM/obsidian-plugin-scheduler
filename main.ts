@@ -11,11 +11,11 @@ const GOALS_FILE = `${SCHEDULER_DATA_FOLDER}/goals.json`;
 
 const DEFAULT_SETTINGS: SchedulerSettings = {
     categories: [
-        { id: 'school', name: 'School', color: '#8B4513' },
-        { id: 'projects', name: 'Projects', color: '#9B59B6' },
-        { id: 'health', name: 'Health', color: '#E74C3C' },
-        { id: 'work', name: 'Work', color: '#3498DB' },
         { id: 'personal', name: 'Personal', color: '#2ECC71' },
+        { id: 'health', name: 'Health', color: '#E74C3C' },
+        { id: 'school', name: 'School', color: '#8B4513' },
+        { id: 'work', name: 'Work', color: '#3498DB' },
+        { id: 'projects', name: 'Projects', color: '#9B59B6' },
         { id: 'other', name: 'Other', color: '#95A5A6' }
     ],
     standardItems: [
@@ -24,9 +24,9 @@ const DEFAULT_SETTINGS: SchedulerSettings = {
             description: 'Morning workout',
             categoryId: 'health',
             schedule: {
-                0: [6],
-                2: [6],
-                4: [6]
+                0: [5],
+                2: [5],
+                4: [5]
             }
         }
     ],
@@ -37,15 +37,12 @@ const DEFAULT_SETTINGS: SchedulerSettings = {
         excludeWakeDays: [],
         excludeSleepDays: []
     },
-    showNotifications: true
 };
 
 export default class SchedulerPlugin extends Plugin {
     settings: SchedulerSettings;
     private backlogItems: SchedulerItem[] = [];
     private generalGoals: SchedulerItem[] = [];
-    private lastNotifiedHour: number = -1;
-    private notificationInterval: number | null = null;
     private dataLoaded: boolean = false;
 
     currentWeek: number;
@@ -102,10 +99,6 @@ export default class SchedulerPlugin extends Plugin {
         });
 
         this.addSettingTab(new SchedulerSettingTab(this.app, this));
-
-        if (this.settings.showNotifications) {
-            this.startNotificationChecker();
-        }
     }
 
     async activateView() {
@@ -156,21 +149,16 @@ export default class SchedulerPlugin extends Plugin {
 
     async ensureDataLoaded(): Promise<void> {
         if (this.dataLoaded) return;
-        
+
         // Small delay to let sync catch up (optional but helps)
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         await this.loadSettings();
         await this.loadBacklog();
         await this.loadGoals();
         await this.loadYearData(this.currentYear);
-        
+
         this.dataLoaded = true;
-        
-        // Start notifications after data loaded
-        if (this.settings.showNotifications) {
-            this.startNotificationChecker();
-        }
     }
 
     // ========== SETTINGS ==========
@@ -904,51 +892,7 @@ export default class SchedulerPlugin extends Plugin {
         new Notice(`Cleared all ${cleared} tasks!`);
     }
 
-    startNotificationChecker() {
-        this.notificationInterval = window.setInterval(() => {
-            this.checkHourlyNotification();
-        }, 60000);
-
-        this.registerInterval(this.notificationInterval);
-    }
-
-    checkHourlyNotification() {
-        if (!this.settings.showNotifications) return;
-
-        const now = new Date();
-        const currentHour = now.getHours();
-        const currentDay = (now.getDay() + 6) % 7;
-
-        if (now.getMinutes() === 0 && this.lastNotifiedHour !== currentHour) {
-            this.lastNotifiedHour = currentHour;
-            this.showHourNotification(currentDay, currentHour);
-        }
-    }
-
-    showHourNotification(day: number, hour: number) {
-        const items = this.getItemsForCell(day, hour);
-
-        if (items.length === 0) return;
-
-        const hourStr = hour.toString().padStart(2, '0') + ':00';
-        let message = `📅 Tasks for ${hourStr}:\n\n`;
-
-        items.forEach(item => {
-            message += `• ${item.name}`;
-            if (item.description) {
-                message += `\n  ${item.description}`;
-            }
-            message += '\n';
-        });
-
-        new Notice(message, 10000);
-    }
-
     async onunload() {
         this.app.workspace.detachLeavesOfType(VIEW_TYPE_SCHEDULER);
-
-        if (this.notificationInterval !== null) {
-            window.clearInterval(this.notificationInterval);
-        }
     }
 }
