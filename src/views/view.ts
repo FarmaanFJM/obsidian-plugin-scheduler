@@ -59,7 +59,7 @@ export class SchedulerView extends ItemView {
         this.renderGeneralGoals(goalsSection);
 
         // Backlog Section (Fixed on right side)
-        const backlogSection = container.createDiv({ cls: 'scheduler-backlog-section' }); // ADD THIS
+        const backlogSection = container.createDiv({ cls: 'scheduler-backlog-section' });
         this.renderBacklog(backlogSection);
     }
 
@@ -78,7 +78,7 @@ export class SchedulerView extends ItemView {
 
         const prevWeekBtn = weekNavContainer.createEl('button', {
             cls: 'nav-btn',
-            text: 'â—€'
+            text: '◀'
         });
         prevWeekBtn.addEventListener('click', async () => {
             await this.plugin.changeWeek(-1);
@@ -91,7 +91,7 @@ export class SchedulerView extends ItemView {
 
         const nextWeekBtn = weekNavContainer.createEl('button', {
             cls: 'nav-btn',
-            text: 'â–¶'
+            text: '▶'
         });
         nextWeekBtn.addEventListener('click', async () => {
             await this.plugin.changeWeek(1);
@@ -159,7 +159,7 @@ export class SchedulerView extends ItemView {
         // Clear Non-Standard button
         const clearNonStandardBtn = buttonGroup.createEl('button', {
             cls: 'clear-weekly-btn',
-            text: 'ðŸ—‘ï¸ Clear Non-Standard Tasks'
+            text: '🗑️ Clear Non-Standard Tasks'
         });
         clearNonStandardBtn.addEventListener('click', () => {
             const confirmed = confirm('Clear all non-standard tasks for current week?');
@@ -171,7 +171,7 @@ export class SchedulerView extends ItemView {
         // Clear All Week Tasks button
         const clearAllBtn = buttonGroup.createEl('button', {
             cls: 'clear-all-btn',
-            text: 'ðŸ—‘ï¸ Clear All Week Tasks'
+            text: '🗑️ Clear All Week Tasks'
         });
         clearAllBtn.addEventListener('click', () => {
             const confirmed = confirm('Clear ALL tasks for current week (including standard/recurring)?');
@@ -192,7 +192,7 @@ export class SchedulerView extends ItemView {
 
         const prevYearBtn = yearNavContainer.createEl('button', {
             cls: 'nav-btn',
-            text: 'â—€'
+            text: '◀'
         });
         prevYearBtn.addEventListener('click', async () => {
             await this.plugin.changeYear(-1);
@@ -205,7 +205,7 @@ export class SchedulerView extends ItemView {
 
         const nextYearBtn = yearNavContainer.createEl('button', {
             cls: 'nav-btn',
-            text: 'â–¶'
+            text: '▶'
         });
         nextYearBtn.addEventListener('click', async () => {
             await this.plugin.changeYear(1);
@@ -299,7 +299,7 @@ export class SchedulerView extends ItemView {
         // Toggle button (always visible)
         const toggleBtn = backlogHeader.createEl('button', {
             cls: 'backlog-toggle-btn',
-            text: this.plugin.settings.backlogExpanded ? 'â†’' : 'â†'
+            text: this.plugin.settings.backlogExpanded ? '→' : '←'
         });
         toggleBtn.setAttribute('aria-label', this.plugin.settings.backlogExpanded ? 'Collapse sidebar' : 'Expand sidebar');
         toggleBtn.addEventListener('click', () => {
@@ -323,7 +323,7 @@ export class SchedulerView extends ItemView {
 
             const trashBtn = buttonContainer.createEl('button', {
                 cls: 'trash-task-btn',
-                text: 'ðŸ—‘ï¸'
+                text: '🗑️'
             });
             trashBtn.addEventListener('click', () => {
                 const confirmed = confirm('Clear all backlog items?');
@@ -364,7 +364,7 @@ export class SchedulerView extends ItemView {
 
                     // Category divider
                     const header = backlogList.createDiv({ cls: 'monthly-type-header' });
-                    header.setText(`â”€â”€â”€â”€â”€â”€â”€â”€ ${category.name.toUpperCase()} â”€â”€â”€â”€â”€â”€â”€â”€`);
+                    header.setText(`──────── ${category.name.toUpperCase()} ────────`);
 
                     // Render items in this category
                     items.forEach((item, index) => {
@@ -435,7 +435,7 @@ export class SchedulerView extends ItemView {
         if (index > 0) {
             const upBtn = btnContainer.createEl('button', {
                 cls: 'task-reorder-btn task-up-btn',
-                text: 'â–²'
+                text: '▲'
             });
             upBtn.addEventListener('click', () => {
                 this.plugin.reorderBacklogItemInCategory(item.id, categoryId, 'up');
@@ -446,7 +446,7 @@ export class SchedulerView extends ItemView {
         if (index < totalCount - 1) {
             const downBtn = btnContainer.createEl('button', {
                 cls: 'task-reorder-btn task-down-btn',
-                text: 'â–¼'
+                text: '▼'
             });
             downBtn.addEventListener('click', () => {
                 this.plugin.reorderBacklogItemInCategory(item.id, categoryId, 'down');
@@ -457,7 +457,7 @@ export class SchedulerView extends ItemView {
         if (item.itemType === 'task') {
             const checkBtn = btnContainer.createEl('button', {
                 cls: 'task-check-btn',
-                text: item.completed ? 'â˜‘' : 'â˜'
+                text: item.completed ? '☑' : '☐'
             });
             checkBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -468,7 +468,7 @@ export class SchedulerView extends ItemView {
         // Edit button
         const editBtn = btnContainer.createEl('button', {
             cls: 'task-edit-btn',
-            text: 'âœŽ'
+            text: '✎'
         });
         editBtn.addEventListener('click', () => {
             this.openEditBacklogItemModal(item);
@@ -477,7 +477,7 @@ export class SchedulerView extends ItemView {
         // Delete button
         const deleteBtn = btnContainer.createEl('button', {
             cls: 'task-delete-btn',
-            text: 'Ã—'
+            text: '×'
         });
         deleteBtn.addEventListener('click', () => {
             this.plugin.removeItem(item.id);
@@ -591,7 +591,7 @@ export class SchedulerView extends ItemView {
             if (item.itemType === 'task') {
                 const checkBtn = btnContainer.createEl('button', {
                     cls: 'item-check-btn',
-                    text: item.completed ? 'â˜‘' : 'â˜'
+                    text: item.completed ? '☑' : '☐'
                 });
                 checkBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -602,7 +602,7 @@ export class SchedulerView extends ItemView {
             // Edit button
             const editBtn = btnContainer.createEl('button', {
                 cls: 'item-edit-btn',
-                text: 'âœŽ'
+                text: '✎'
             });
             editBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -612,7 +612,7 @@ export class SchedulerView extends ItemView {
             // Delete button
             const deleteBtn = btnContainer.createEl('button', {
                 cls: 'item-delete-btn',
-                text: 'Ã—'
+                text: '×'
             });
             deleteBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -656,7 +656,7 @@ export class SchedulerView extends ItemView {
 
         const trashBtn = monthHeader.createEl('button', {
             cls: 'trash-task-btn',
-            text: 'ðŸ—‘ï¸'
+            text: '🗑️'
         });
         trashBtn.addEventListener('click', () => {
             const confirmed = confirm(`Clear all tasks for ${monthName}?`);
@@ -705,7 +705,7 @@ export class SchedulerView extends ItemView {
 
             // Section header
             const header = tasksList.createDiv({ cls: 'monthly-type-header' });
-            header.setText(`â”€â”€â”€â”€â”€â”€â”€â”€ ${label} â”€â”€â”€â”€â”€â”€â”€â”€`);
+            header.setText(`──────── ${label} ────────`);
 
             items.forEach((task, index) => {
                 this.renderMonthlyTaskCard(tasksList, task, monthIndex, key, index, items.length);
@@ -786,7 +786,7 @@ export class SchedulerView extends ItemView {
         if (index > 0) {
             const upBtn = btnContainer.createEl('button', {
                 cls: 'task-reorder-btn task-up-btn',
-                text: 'â–²'
+                text: '▲'
             });
             upBtn.addEventListener('click', () => {
                 this.plugin.reorderMonthlyTask(task.id, monthIndex, taskType, 'up');
@@ -797,7 +797,7 @@ export class SchedulerView extends ItemView {
         if (index < totalCount - 1) {
             const downBtn = btnContainer.createEl('button', {
                 cls: 'task-reorder-btn task-down-btn',
-                text: 'â–¼'
+                text: '▼'
             });
             downBtn.addEventListener('click', () => {
                 this.plugin.reorderMonthlyTask(task.id, monthIndex, taskType, 'down');
@@ -808,7 +808,7 @@ export class SchedulerView extends ItemView {
         if (task.itemType === 'task') {
             const checkBtn = btnContainer.createEl('button', {
                 cls: 'task-check-btn',
-                text: task.completed ? 'â˜‘' : 'â˜'
+                text: task.completed ? '☑' : '☐'
             });
             checkBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -819,7 +819,7 @@ export class SchedulerView extends ItemView {
         // Edit button
         const editBtn = btnContainer.createEl('button', {
             cls: 'task-edit-btn',
-            text: 'âœŽ'
+            text: '✎'
         });
         editBtn.addEventListener('click', () => {
             this.openEditMonthlyTaskModal(task);
@@ -828,7 +828,7 @@ export class SchedulerView extends ItemView {
         // Delete button
         const deleteBtn = btnContainer.createEl('button', {
             cls: 'task-delete-btn',
-            text: 'Ã—'
+            text: '×'
         });
         deleteBtn.addEventListener('click', () => {
             this.plugin.removeItem(task.id);
@@ -892,7 +892,7 @@ export class SchedulerView extends ItemView {
 
         const trashBtn = categoryHeader.createEl('button', {
             cls: 'trash-task-btn',
-            text: 'ðŸ—‘ï¸'
+            text: '🗑️'
         });
         trashBtn.addEventListener('click', () => {
             const confirmed = confirm(`Clear all goals for ${category.name}?`);
@@ -904,7 +904,7 @@ export class SchedulerView extends ItemView {
         // Category divider (like monthly view)
         if (goals.length > 0) {
             const header = categoryCol.createDiv({ cls: 'monthly-type-header' });
-            header.setText(`â”€â”€â”€â”€â”€â”€â”€â”€ ${category.name.toUpperCase()} â”€â”€â”€â”€â”€â”€â”€â”€`);
+            header.setText(`──────── ${category.name.toUpperCase()} ────────`);
         }
 
         const goalsList = categoryCol.createDiv({ cls: 'goals-list' });
@@ -956,7 +956,7 @@ export class SchedulerView extends ItemView {
         if (index > 0) {
             const upBtn = btnContainer.createEl('button', {
                 cls: 'task-reorder-btn task-up-btn',
-                text: 'â–²'
+                text: '▲'
             });
             upBtn.addEventListener('click', () => {
                 this.plugin.reorderGeneralGoal(goal.id, 'up');
@@ -967,7 +967,7 @@ export class SchedulerView extends ItemView {
         if (index < totalCount - 1) {
             const downBtn = btnContainer.createEl('button', {
                 cls: 'task-reorder-btn task-down-btn',
-                text: 'â–¼'
+                text: '▼'
             });
             downBtn.addEventListener('click', () => {
                 this.plugin.reorderGeneralGoal(goal.id, 'down');
@@ -977,7 +977,7 @@ export class SchedulerView extends ItemView {
         // Edit button
         const editBtn = btnContainer.createEl('button', {
             cls: 'task-edit-btn',
-            text: 'âœŽ'
+            text: '✎'
         });
         editBtn.addEventListener('click', () => {
             this.openEditGeneralGoalModal(goal);
@@ -986,7 +986,7 @@ export class SchedulerView extends ItemView {
         // Delete button
         const deleteBtn = btnContainer.createEl('button', {
             cls: 'task-delete-btn',
-            text: 'Ã—'
+            text: '×'
         });
         deleteBtn.addEventListener('click', () => {
             this.plugin.removeItem(goal.id);
