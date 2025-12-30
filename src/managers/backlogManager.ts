@@ -83,4 +83,8 @@ export class BacklogManager {
         await this.saveSettings();
         this.refreshView();
     }
+
+    updateBacklog(items: SchedulerItem[]) {
+        this.backlogItems = items;
+    }
 }

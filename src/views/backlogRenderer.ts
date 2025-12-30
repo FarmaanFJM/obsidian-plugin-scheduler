@@ -28,10 +28,12 @@ import { ItemRenderer } from './itemRenderer';
 export class BacklogRenderer {
     private plugin: SchedulerPlugin;
     private itemRenderer: ItemRenderer;
+    private refreshView: () => void;
 
-    constructor(plugin: SchedulerPlugin) {
+    constructor(plugin: SchedulerPlugin, refreshView: () => void) {
         this.plugin = plugin;
         this.itemRenderer = new ItemRenderer(plugin);
+        this.refreshView = refreshView;
     }
 
     /**
@@ -51,7 +53,7 @@ export class BacklogRenderer {
         // Toggle button (always visible)
         const toggleBtn = backlogHeader.createEl('button', {
             cls: 'backlog-toggle-btn',
-            text: this.plugin.settings.backlogExpanded ? '←' : '→'
+            text: this.plugin.settings.backlogExpanded ? '→' : '←'
         });
         toggleBtn.setAttribute(
             'aria-label',
@@ -199,6 +201,7 @@ export class BacklogRenderer {
         // Delete button
         this.itemRenderer.createDeleteButton(btnContainer, () => {
             this.plugin.removeItem(item.id);
+            this.refreshView();
         });
     }
 

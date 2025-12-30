@@ -7,7 +7,7 @@
  * 
  * ARCHITECTURE:
  * This view acts as a coordinator, delegating rendering responsibilities to:
- * - WeeklyRenderer: 7-day × hour grid with navigation
+ * - WeeklyRenderer: 7-day Ã— hour grid with navigation
  * - MonthlyRenderer: 12-month grid with tasks grouped by type
  * - GoalsRenderer: General goals organized by category
  * - BacklogRenderer: Collapsible to-do sidebar
@@ -20,7 +20,7 @@
  * - Interval cleanup on close
  * 
  * LAYOUT STRUCTURE:
- * - Main content area (left): Weekly → Monthly → Goals
+ * - Main content area (left): Weekly â†’ Monthly â†’ Goals
  * - Fixed sidebar (right): Backlog
  */
 
@@ -53,7 +53,7 @@ export class SchedulerView extends ItemView {
         this.weeklyRenderer = new WeeklyRenderer(plugin, refreshCallback);
         this.monthlyRenderer = new MonthlyRenderer(plugin, refreshCallback);
         this.goalsRenderer = new GoalsRenderer(plugin, refreshCallback);
-        this.backlogRenderer = new BacklogRenderer(plugin);
+        this.backlogRenderer = new BacklogRenderer(plugin, refreshCallback);
     }
 
     // ==================== View Lifecycle ====================

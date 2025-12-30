@@ -767,7 +767,9 @@
 }
 
 .scheduler-item-card:hover .item-buttons,
-.task-card:hover .task-buttons {
+.task-card:hover .task-buttons,
+.task-card:hover .item-buttons,
+.scheduler-item-card:hover .task-buttons {
     opacity: 1;
 }
 
@@ -842,14 +844,18 @@
 }
 
 .item-buttons .item-delete-btn,
-.task-buttons .task-delete-btn {
-    position: static;
+.task-buttons .task-delete-btn,
+.task-buttons .item-delete-btn,
+.item-buttons .task-delete-btn {
+    position: static; 
     width: 20px;
     height: 20px;
 }
 
 .scheduler-item-card:hover .item-delete-btn,
-.task-card:hover .task-delete-btn {
+.task-card:hover .task-delete-btn,
+.task-card:hover .item-delete-btn,
+.scheduler-item-card:hover .task-delete-btn {
     opacity: 1;
 }
 

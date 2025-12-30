@@ -265,6 +265,11 @@ export default class SchedulerPlugin extends Plugin {
             this.goalsManager.updateGoals(result.newGoals);
         }
 
+        if (result.newBacklog) {
+            this.backlogManager.updateBacklog(result.newBacklog);   
+        }                                                            
+
+
         if (result.needsSaveBacklog) await this.backlogManager.saveBacklog();
         if (result.needsSaveGoals) await this.goalsManager.saveGoals();
         if (result.needsSaveYear) await this.scheduleManager.saveYearData();
