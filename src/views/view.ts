@@ -1,9 +1,9 @@
 import { ItemView, Notice, WorkspaceLeaf } from 'obsidian';
-import SchedulerPlugin from './main';
-import { AddItemModal } from './modal';
+import SchedulerPlugin from '../../main';
+import { AddItemModal } from '../modals/modal';
 import { EditItemModal } from './editModal';
-import { SchedulerItem, CategoryConfig, ItemType } from './types';
-import { DateUtils } from './dateUtils';
+import { SchedulerItem, CategoryConfig, ItemType } from '../types';
+import { DateUtils } from '../utils/dateUtils';
 
 export const VIEW_TYPE_SCHEDULER = 'scheduler-view';
 

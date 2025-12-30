@@ -1,5 +1,5 @@
-import type SchedulerPlugin from './main';
-import { CategoryConfig, StandardItemConfig, DayHourSchedule } from './types';
+import type SchedulerPlugin from '../../main';
+import { CategoryConfig, StandardItemConfig, DayHourSchedule } from '../types';
 import { App, PluginSettingTab, Setting, Notice, Modal, TextComponent, DropdownComponent } from 'obsidian';
 
 export class SchedulerSettingTab extends PluginSettingTab {

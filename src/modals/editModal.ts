@@ -1,5 +1,5 @@
 import { App, Modal, Setting, Notice } from 'obsidian';
-import { SchedulerItem, CategoryConfig, ItemType } from './types';
+import { SchedulerItem, CategoryConfig, ItemType } from '../types';
 
 export class EditItemModal extends Modal {
     private item: SchedulerItem;
