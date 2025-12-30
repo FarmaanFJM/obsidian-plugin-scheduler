@@ -4,51 +4,40 @@ An interactive weekly scheduler plugin that lets you create color-coded weekly p
 
 ## Features
 
-✅ **Interactive Weekly Scheduler**
+**Interactive Weekly Scheduler**
 - Click any cell to add items
 - Color-coded categories (School, Projects, Health, etc.)
 - Multiple items per cell
 - Custom colors supported
 
-✅ **Standard Items**
+**Standard Items**
 - Pre-configure recurring items (Sleep, Gym, Meals)
 - Auto-insert standard items into your schedule
 
-✅ **Monthly Task Lists**
+**Monthly Task Lists**
 - Generate monthly task templates
 - Track tasks across the year
 
-✅ **Customizable Categories**
+**Customizable Categories**
 - Add, edit, or remove categories
 - Set custom colors for each category
 
 ## Installation
 
-1. Copy all the plugin files to your Obsidian vault:
-   ```
-   VaultFolder/.obsidian/plugins/scheduler-plugin/
-   ```
+### From Obsidian Community Plugins (Recommended)
 
-2. The plugin folder should contain:
-   - `main.ts`
-   - `manifest.json`
-   - `types.ts`
-   - `tableUtils.ts`
-   - `modal.ts`
-   - `settings.ts`
+1. Open **Settings** in Obsidian
+2. Navigate to **Community Plugins** and disable **Restricted Mode**
+3. Click **Browse** and search for "Scheduler"
+4. Click **Install**, then **Enable**
 
-3. Compile the TypeScript files:
-   ```bash
-   cd VaultFolder/.obsidian/plugins/scheduler-plugin/
-   npm install
-   npm run build
-   ```
+### Manual Installation
 
-4. Enable the plugin in Obsidian:
-   - Go to Settings → Community Plugins
-   - Turn off "Restricted Mode" if needed
-   - Click "Reload Plugins"
-   - Enable "Scheduler"
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/yourusername/obsidian-scheduler-plugin/releases)
+2. Create a folder named `obsidian-scheduler-plugin` in your vault's `.obsidian/plugins/` directory
+3. Copy the downloaded files into that folder
+4. Reload Obsidian
+5. Enable the plugin in **Settings → Community Plugins**
 
 ## Usage
 
@@ -85,7 +74,7 @@ An interactive weekly scheduler plugin that lets you create color-coded weekly p
 
 ### Configuring Categories
 
-1. Go to Settings → Scheduler
+1. Go to **Settings → Scheduler**
 2. Under "Categories":
    - **Edit name**: Change category names
    - **Change color**: Click the color picker
@@ -157,6 +146,31 @@ An interactive weekly scheduler plugin that lets you create color-coded weekly p
 - HTML spans should render in Reading/Live Preview mode
 - Check that your theme supports inline HTML
 
+## Development
+
+Want to contribute or modify the plugin?
+
+```bash
+# Clone the repository
+git clone https://github.com/FarmaanFJM/obsidian-plugin-scheduler.git
+
+# Install dependencies
+npm install
+
+# Start development build (watch mode)
+npm run dev
+
+# Production build
+npm run build
+```
+
+The plugin follows TypeScript best practices with organized file structure:
+- `main.ts` - Plugin entry point
+- `settings.ts` - Settings management
+- `*Manager.ts` - Feature managers (schedule, backlog, goals)
+- `*Renderer.ts` - UI rendering logic
+- `*Modal.ts` - Modal dialogs
+
 ## Technical Details
 
 - Built with TypeScript
@@ -164,9 +178,16 @@ An interactive weekly scheduler plugin that lets you create color-coded weekly p
 - Stores data directly in Markdown
 - No external dependencies
 - Works offline
+- Compatible with mobile devices
 
 ## Support
 
-For issues or feature requests, check the plugin settings or reload the plugin.
+For issues or feature requests, please visit the [GitHub repository](https://github.com/yourusername/obsidian-scheduler-plugin/issues).
+
+## License
+
+MIT
+
+---
 
 Enjoy organizing your schedule! 📅

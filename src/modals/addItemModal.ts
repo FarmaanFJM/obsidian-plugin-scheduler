@@ -1,5 +1,42 @@
+/**
+ * Modal for adding new items to the scheduler
+ * 
+ * RESPONSIBILITY:
+ * Create new one-time or monthly items across different scheduler contexts.
+ * This is a multi-context modal that adapts its UI based on where it's called from.
+ * 
+ * USED BY:
+ * 1. Weekly Schedule (SchedulerView)
+ *    → When user clicks empty cell in weekly grid
+ *    → Adds item to specific day/hour
+ * 
+ * 2. Monthly Schedule (SchedulerView)
+ *    → When user clicks "+" button in month column
+ *    → Adds item to specific month (with deadline day/hour for deadline type)
+ * 
+ * 3. General Goals (SchedulerView)
+ *    → When user clicks "+" button in goals section
+ *    → Adds goal with locked category and type='goal'
+ * 
+ * 4. Backlog (SchedulerView)
+ *    → When user clicks "+" button in backlog sidebar
+ *    → Adds item to backlog with full flexibility
+ * 
+ * ADAPTIVE BEHAVIOR:
+ * - Monthly context: Shows deadline day/hour fields (only for deadline type)
+ * - Locked category: Displays category as read-only text
+ * - Locked item type: Displays type as read-only text (used for goals)
+ * - Regular context: All fields fully editable
+ * 
+ * EXAMPLES:
+ * - Weekly: "Add 'Doctor Appointment' to Tuesday at 2:00 PM"
+ * - Monthly: "Add 'Tax Deadline' to April with deadline on 15th at 9:00 AM"
+ * - Goals: "Add 'Learn Spanish' goal to Personal category"
+ * - Backlog: "Add 'Fix bug in dashboard' to backlog"
+ * 
+ */
 import { App, Modal, Setting } from 'obsidian';
-import { SchedulerItem, CategoryConfig, ItemType } from './types';
+import { SchedulerItem, CategoryConfig, ItemType } from '../types';
 
 export class AddItemModal extends Modal {
     private name: string = '';
