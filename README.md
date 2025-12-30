@@ -1,30 +1,40 @@
 # Scheduler Plugin for Obsidian
 
-An interactive weekly scheduler plugin that lets you create color-coded weekly planners with clickable cells.
+An interactive weekly scheduler plugin with a dedicated view for managing your schedule, backlog, and goals.
 
 ## Features
 
-**Interactive Weekly Scheduler**
-- Click any cell to add items
+**Weekly Scheduler View**
+- Dedicated scheduler interface accessible via sidebar
+- Interactive weekly calendar (Monday-Sunday, 04:00-23:00)
+- Click any cell to add/edit items
 - Color-coded categories (School, Projects, Health, etc.)
-- Multiple items per cell
-- Custom colors supported
+- Multiple items per time slot
+- Navigate between weeks and years
 
-**Standard Items**
-- Pre-configure recurring items (Sleep, Gym, Meals)
-- Auto-insert standard items into your schedule
+**Backlog Management**
+- Track tasks that aren't scheduled yet
+- Organize by categories
+- Drag items to schedule them
 
-**Monthly Task Lists**
-- Generate monthly task templates
-- Track tasks across the year
+**Goals Tracking**
+- Set general goals
+- Category-specific goals
+- Track progress over time
+
+**Standard Tasks**
+- Pre-configure recurring items (Sleep, Gym, Meals, etc.)
+- One-click populate for the current week
+- Customize in settings
 
 **Customizable Categories**
 - Add, edit, or remove categories
 - Set custom colors for each category
+- Organize your schedule your way
 
 ## Installation
 
-### From Obsidian Community Plugins (Recommended)
+### From Obsidian Community Plugins (Coming Soon)
 
 1. Open **Settings** in Obsidian
 2. Navigate to **Community Plugins** and disable **Restricted Mode**
@@ -33,81 +43,89 @@ An interactive weekly scheduler plugin that lets you create color-coded weekly p
 
 ### Manual Installation
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/yourusername/obsidian-scheduler-plugin/releases)
-2. Create a folder named `obsidian-scheduler-plugin` in your vault's `.obsidian/plugins/` directory
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/FarmaanFJM/obsidian-plugin-scheduler/releases)
+2. Create a folder named `obsidian-plugin-scheduler` in your vault's `.obsidian/plugins/` directory
 3. Copy the downloaded files into that folder
 4. Reload Obsidian
 5. Enable the plugin in **Settings → Community Plugins**
 
 ## Usage
 
-### Creating a Weekly Scheduler
+### Opening the Scheduler
 
-1. Open any note
-2. Open Command Palette (Ctrl/Cmd + P)
-3. Run: **"Insert Weekly Scheduler Table"**
-4. A weekly table will be inserted (04:00 - 23:00, Monday - Sunday)
+**Method 1: Ribbon Icon**
+- Click the calendar icon in the left sidebar
+
+**Method 2: Command Palette**
+1. Open Command Palette (`Ctrl/Cmd + P`)
+2. Run: **"Scheduler: Open Scheduler"**
 
 ### Adding Items to Your Schedule
 
-1. **Click any cell** in the scheduler table
-2. A modal will appear with:
+1. In the scheduler view, **click any time cell**
+2. A modal appears with:
    - **Name** (required): e.g., "Gym", "Study", "Meeting"
    - **Description** (optional): Additional details
    - **Category**: Choose from predefined categories
-   - **Custom Color**: Override category color if needed
+   - **Custom Color** (optional): Override category color
 3. Click **"Add Item"**
 4. The item appears in the cell with color formatting
 
-### Adding Multiple Items
+### Navigating Weeks
 
-- Click the same cell multiple times to add more items
-- Each item appears as a separate bullet point
-- Items stack vertically in the cell
+- Use **◀ Previous Week** and **Next Week ▶** buttons
+- View current week number and year at the top
+- Schedule automatically saves for each week
 
-### Using Standard Items
+### Using Standard Tasks
 
-1. Open Command Palette
-2. Run: **"Insert Standard Items Into Week"**
-3. Predefined items (Sleep, Gym, Meals) are added to your schedule
-4. Standard items won't duplicate if already present
+Standard tasks are recurring items you do regularly (like Sleep, Gym, Meals).
 
-### Configuring Categories
+**To populate the current week with standard tasks:**
+1. Open Command Palette (`Ctrl/Cmd + P`)
+2. Run: **"Scheduler: Populate Standard Tasks"**
+3. Your predefined standard tasks are added to the current week
 
+**To configure standard tasks:**
 1. Go to **Settings → Scheduler**
-2. Under "Categories":
-   - **Edit name**: Change category names
-   - **Change color**: Click the color picker
-   - **Delete**: Remove unwanted categories
-   - **Add New Category**: Create custom categories
+2. Scroll to **Standard Items**
+3. Add/edit/remove recurring tasks
+4. Set time slots and days for each task
 
-### Resetting Your Schedule
+### Managing Your Schedule
 
-1. Open Command Palette
-2. Run: **"Reset Weekly Scheduler"**
-3. All items are cleared, but the table structure remains
+**Clear specific items:**
+- Click on an item in a cell to edit or delete it
 
-### Creating Monthly Task Lists
+**Clear non-standard tasks:**
+1. Command Palette → **"Scheduler: Clear All Non-Standard Tasks (Current Week)"**
+2. Keeps standard/recurring tasks, removes everything else
 
-1. Open Command Palette
-2. Run: **"Insert Monthly Tasklist"**
-3. A template with all 12 months is inserted
-4. Add tasks under each month
+**Clear ALL tasks:**
+1. Command Palette → **"Scheduler: Clear ALL Tasks (Current Week)"**
+2. Confirmation required
+3. Removes all items including standard tasks
 
-## Example Workflow
+**Refresh the view:**
+- Command Palette → **"Scheduler: Refresh Scheduler View"**
+- Useful if view doesn't update automatically
 
-```markdown
-# My 2025 Schedule
+### Using the Backlog
 
-<!-- scheduler-start -->
+The backlog holds tasks that aren't scheduled yet:
 
-| Time  | Monday | Tuesday | Wednesday | Thursday | Friday | Saturday | Sunday |
-| ----- | ------ | ------- | --------- | -------- | ------ | -------- | ------ |
-| 06:00 | - <span style="color:#FFA500; font-weight:bold;">Gym</span>  <br>  Cardio workout | | - <span style="color:#FFA500; font-weight:bold;">Gym</span>  <br>  Strength training | | - <span style="color:#FFA500; font-weight:bold;">Gym</span>  <br>  Full body | | |
-| 09:00 | - <span style="color:#8B4513; font-weight:bold;">School</span>  <br>  Math class | - <span style="color:#8B4513; font-weight:bold;">School</span>  <br>  Programming | - <span style="color:#8B4513; font-weight:bold;">School</span>  <br>  Database Design | | | | |
+1. Click **"+ Add to Backlog"** in the backlog sidebar
+2. Add task details and category
+3. Tasks are organized by category
+4. When ready, schedule them by adding to a time slot
 
-<!-- scheduler-end -->
-```
+### Setting Goals
+
+Track your objectives in the Goals section:
+
+1. Navigate to the Goals view in the scheduler
+2. Add general goals or category-specific goals
+3. Check them off as you complete them
 
 ## Default Categories
 
@@ -116,35 +134,48 @@ An interactive weekly scheduler plugin that lets you create color-coded weekly p
 - **Health** - Orange (#FFA500)
 - **Other** - Blue (#00A0C8)
 
-## Tips
-
-1. **Color Coding**: Use consistent colors for similar activities
-2. **Descriptions**: Add details like locations, specific exercises, or meeting topics
-3. **Multi-Year**: Create separate files like `Schedule-2025.md`, `Schedule-2026.md`
-4. **Backup**: The plugin works with Markdown, so your data is always readable
-
 ## Commands Summary
 
 | Command | Description |
 |---------|-------------|
-| Insert Weekly Scheduler Table | Creates a new empty scheduler |
-| Insert Standard Items Into Week | Populates predefined recurring items |
-| Reset Weekly Scheduler | Clears all items from the table |
-| Insert Monthly Tasklist | Creates a 12-month task template |
+| Open Scheduler | Opens the scheduler view in a new tab |
+| Populate Standard Tasks | Adds your predefined recurring tasks to the current week |
+| Clear All Non-Standard Tasks (Current Week) | Removes all items except standard/recurring tasks |
+| Clear ALL Tasks (Current Week) | Removes ALL items including standard tasks (requires confirmation) |
+| Refresh Scheduler View | Manually refreshes the scheduler display |
 
-## Troubleshooting
+## Settings
 
-**Items not appearing when clicked?**
-- Make sure the table has the `<!-- scheduler-start -->` and `<!-- scheduler-end -->` markers
-- Try switching to Reading mode or Live Preview
+Access settings via **Settings → Scheduler**:
 
-**Can't click cells?**
-- Ensure you're in Reading mode or Live Preview (not Source mode)
-- Refresh the note (close and reopen)
+### Categories
+- Add new categories
+- Edit category names and colors
+- Delete categories
+- Reorder categories
 
-**Colors not showing?**
-- HTML spans should render in Reading/Live Preview mode
-- Check that your theme supports inline HTML
+### Standard Items
+- Configure recurring tasks (Sleep, Gym, Meals, etc.)
+- Set which days and times they occur
+- Toggle whether they're active
+
+### General Settings
+- Start hour (default: 04:00)
+- End hour (default: 23:00)
+- Other display preferences
+
+## Keyboard Shortcuts
+
+- `Ctrl/Cmd + P` → Command Palette (to access all commands)
+- Click cell → Add/edit items
+- Click item → Edit or delete
+
+## Data Storage
+
+- All data is stored as JSON in your vault: `.obsidian/plugins/obsidian-plugin-scheduler/data.json`
+- Schedule data is organized by year and week number
+- Backlog and goals are stored separately
+- Your data syncs with your vault (compatible with Obsidian Sync, iCloud, etc.)
 
 ## Development
 
@@ -165,24 +196,27 @@ npm run build
 ```
 
 The plugin follows TypeScript best practices with organized file structure:
-- `main.ts` - Plugin entry point
-- `settings.ts` - Settings management
-- `*Manager.ts` - Feature managers (schedule, backlog, goals)
-- `*Renderer.ts` - UI rendering logic
-- `*Modal.ts` - Modal dialogs
+```
+src/
+├── managers/      # Business logic
+├── modals/        # User interaction dialogs
+├── settings/      # Plugin configuration
+├── utils/         # Helper functions
+└── views/         # UI rendering
+```
 
 ## Technical Details
 
 - Built with TypeScript
 - Uses Obsidian Plugin API
-- Stores data directly in Markdown
-- No external dependencies
+- Custom view implementation
+- Local-first (no external services)
 - Works offline
 - Compatible with mobile devices
 
 ## Support
 
-For issues or feature requests, please visit the [GitHub repository](https://github.com/yourusername/obsidian-scheduler-plugin/issues).
+For issues or feature requests, please visit the [GitHub repository](https://github.com/FarmaanFJM/obsidian-plugin-scheduler/issues).
 
 ## License
 
