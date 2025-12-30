@@ -1,4 +1,4 @@
-import type SchedulerPlugin from '../../main';
+import type SchedulerPlugin from '../main';
 import { CategoryConfig, StandardItemConfig, DayHourSchedule } from '../types';
 import { App, PluginSettingTab, Setting, Notice, Modal, TextComponent, DropdownComponent } from 'obsidian';
 
@@ -23,7 +23,7 @@ export class SchedulerSettingTab extends PluginSettingTab {
             cls: 'setting-item-description'
         });
 
-        this.plugin.settings.categories.forEach((category, index) => {
+        this.plugin.settings.categories.forEach((category: CategoryConfig, index: number) => {
             this.createCategorySetting(containerEl, category, index);
         });
 
@@ -167,7 +167,7 @@ export class SchedulerSettingTab extends PluginSettingTab {
             cls: 'setting-item-description'
         });
 
-        this.plugin.settings.standardItems.forEach((task, index) => {
+        this.plugin.settings.standardItems.forEach((task: StandardItemConfig, index: number) => {
             this.createStandardTaskSetting(containerEl, task, index);
         });
 
@@ -213,7 +213,7 @@ export class SchedulerSettingTab extends PluginSettingTab {
                 .setButtonText('Clear Everything')
                 .setWarning()
                 .onClick(() => {
-                    const confirmed = confirm('⚠️ Clear ALL tasks from current week including Sleep, Wake-up, and recurring tasks? This CANNOT be undone!');
+                    const confirmed = confirm('âš ï¸ Clear ALL tasks from current week including Sleep, Wake-up, and recurring tasks? This CANNOT be undone!');
                     if (confirmed) {
                         this.plugin.clearAllTasks();
                     }
@@ -358,7 +358,7 @@ export class SchedulerSettingTab extends PluginSettingTab {
     }
 }
 
-// Edit Standard Task Modal with Day×Hour Grid
+// Edit Standard Task Modal with DayÃ—Hour Grid
 class EditStandardTaskModal extends Modal {
     task: StandardItemConfig;
     plugin: SchedulerPlugin;
@@ -420,7 +420,7 @@ class EditStandardTaskModal extends Modal {
             .setName('Category')
             .addDropdown(dropdown => {
                 this.categoryDropdown = dropdown;
-                this.plugin.settings.categories.forEach(cat => {
+                this.plugin.settings.categories.forEach((cat: CategoryConfig) => {
                     dropdown.addOption(cat.id, cat.name);
                 });
                 dropdown.setValue(this.task.categoryId);
@@ -433,7 +433,7 @@ class EditStandardTaskModal extends Modal {
             cls: 'schedule-grid-subtitle'
         });
 
-        // Day×Hour Grid
+        // DayÃ—Hour Grid
         this.renderScheduleGrid(contentEl);
 
         // Buttons
