@@ -2,6 +2,20 @@
 
 An interactive weekly scheduler plugin with a dedicated view for managing your schedule, backlog, and goals.
 
+## Screenshots
+
+### Weekly Schedule View
+![Weekly Schedule](assets/screenshot-weekly.png)
+
+### Backlog Sidebar
+![Backlog Management](assets/screenshot-backlog.png)
+
+### Monthly Schedule View
+![Goals View](assets/screenshot-monthly.png)
+
+### Goals Tracking
+![Goals View](assets/screenshot-goals.png)
+
 ## Features
 
 **Weekly Scheduler View**
