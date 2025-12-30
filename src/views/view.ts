@@ -1,7 +1,7 @@
 import { ItemView, Notice, WorkspaceLeaf } from 'obsidian';
 import SchedulerPlugin from '../main';
-import { AddItemModal } from '../modals/modal';
-import { EditItemModal } from '../modals/editModal';
+import { AddItemModal } from '../modals/addItemModal';
+import { EditItemModal } from '../modals/editItemModal';
 import { SchedulerItem, CategoryConfig, ItemType } from '../types';
 import { DateUtils } from '../utils/dateUtils';
 

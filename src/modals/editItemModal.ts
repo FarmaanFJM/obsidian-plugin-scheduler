@@ -1,3 +1,41 @@
+/**
+ * Modal for editing existing scheduler items
+ * 
+ * RESPONSIBILITY:
+ * Modify properties of items that already exist in the schedule.
+ * Can edit name, description, category, type, and deadline metadata.
+ * 
+ * USED BY:
+ * 1. Weekly Schedule (SchedulerView)
+ *    → When user clicks "Edit" button (✎) on item in weekly grid
+ * 
+ * 2. Monthly Schedule (SchedulerView)
+ *    → When user clicks "Edit" button (✎) on item in month column
+ * 
+ * 3. General Goals (SchedulerView)
+ *    → When user clicks "Edit" button (✎) on goal card
+ * 
+ * 4. Backlog (SchedulerView)
+ *    → When user clicks "Edit" button (✎) on backlog item
+ * 
+ * FEATURES:
+ * - Edit all item properties (name, description, category, type)
+ * - Type conversion: Can change regular → task, task → deadline, etc.
+ * - Deadline metadata: Shows date/hour fields when type is 'deadline'
+ * - Standard task warning: Shows alert if editing recurring task instance
+ * 
+ * IMPORTANT BEHAVIORS:
+ * - Changing TO deadline type: Shows deadline date/hour fields
+ * - Changing FROM deadline type: Removes deadline metadata
+ * - Standard tasks: Shows warning that changes only affect this instance
+ * 
+ * EXAMPLES:
+ * - Change "Meeting" from 3:00 PM to 4:00 PM
+ * - Convert regular item to task with checkbox
+ * - Update deadline date for urgent item
+ * - Move item to different category
+ * 
+ */
 import { App, Modal, Setting, Notice } from 'obsidian';
 import { SchedulerItem, CategoryConfig, ItemType } from '../types';
 
